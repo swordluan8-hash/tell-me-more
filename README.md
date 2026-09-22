@@ -46,10 +46,10 @@ Demo questionnaire runs may append additional demonstration T0 snapshots.
 
 ## Sanity and Context
 
-Provisioned project: **3tdecpiq**, dataset: **production**. The seed was written
-and independently read back from Content Lake. The project is initially unclaimed;
-claim it before **2026-09-25 01:10 UTC** using the private, gitignored
-`sanity/claim-project.html`. The link grants ownership; do not share it.
+Provisioned project: **3tdecpiq**, dataset: **production**. The project is now
+attached to the user's Sanity organization. Content Lake readback is live. A hosted
+Studio is deployed at `https://tell-me-more-xu-neng.sanity.studio/`, and its schema
+deployment has been verified.
 
 Credentials live only in `sanity/.env.local` (see `.env.example`). Server code reads
 that file; tokens are never shipped in frontend environment variables.
@@ -60,28 +60,26 @@ npm run verify:sanity          # prints only safe project/retrieval status
 npm run schema:deploy
 ```
 
-**Context is not authorized yet.** The UI explicitly reports `sanity-groq`, not
-Context success. Current official setup requires a claimed organization, Context
-enabled in its Labs settings, a dataset-source MCP endpoint with a deployed schema,
-and an organization-level Context Viewer token. Configure these server-side:
+**Sanity Context is now verified.** Context is installed for the organization,
+an organization-level Context Viewer token has been provisioned, and the hosted
+Studio/schema prerequisite is deployed. The running demo uses the verified
+project/dataset Context endpoint:
 
 ```dotenv
-SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/ORG/mcp/ENDPOINT
-SANITY_ORGANIZATION_TOKEN= # enter privately in sanity/.env.local
+SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-03-03/context/mcp/3tdecpiq/production
 ```
 
-Scope the Context endpoint with this filter (not a full GROQ query):
+That endpoint authenticates server-side and returns `initial_context`, `groq_query`,
+`schema_explorer`, and `array_field_reader`. The adapter also supports the newer
+organization-named endpoint form (`/v1/context/organizations/.../mcp/...`) and uses
+the organization Context token for that form. Tokens remain only in gitignored
+`sanity/.env.local`.
 
-```groq
-_type == "historicalEvent" && userId == "single-user" && status == "sealed"
-```
-
-The adapter lists tools, calls `groq_query` for outcome-free candidate IDs, then
-reads back complete structured events and reranks only those candidates. MCP errors
-or missing permissions produce an explicit Content Lake fallback. Dataset mode is
-implemented; Knowledge Base mode and model-generated semantic queries are not.
-This is a deterministic retrieval agent; no paid model or external-world AI is used.
-**Path One Context acceptance remains incomplete until authorized and verified.**
+The adapter lists tools, requires `groq_query`, calls it for outcome-free candidate
+IDs, reads back complete structured events, and reranks only those candidates.
+MCP errors still produce an explicit Content Lake fallback. Knowledge Base mode and
+model-generated semantic queries are not used. **Path One Context acceptance is now
+satisfied by live Context MCP retrieval.**
 
 References verified on 2026-09-22:
 [AI coding-agent quickstart](https://www.sanity.io/docs/getting-started/ai-coding-agents),

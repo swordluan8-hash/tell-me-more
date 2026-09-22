@@ -38,7 +38,10 @@ export async function retrieve(
   const mode = storageMode(personal);
   if (mode === "local-demo")
     return { events, mode, notice: "本地持久化档案；未使用 Sanity Context。" };
-  if (!c.contextUrl || !c.organizationToken)
+  const contextToken = c.contextUrl?.includes("/context/organizations/")
+    ? c.organizationToken
+    : c.token;
+  if (!c.contextUrl || !contextToken)
     return {
       events,
       mode,
@@ -51,15 +54,21 @@ export async function retrieve(
   });
   try {
     const url = new URL(c.contextUrl);
+    const organizationEndpoint =
+      url.pathname.startsWith("/v1/context/organizations/");
+    const projectDatasetEndpoint =
+      /^\/v\d{4}-\d{2}-\d{2}\/context\/mcp\/[^/]+\/[^/]+\/?$/.test(
+        url.pathname,
+      );
     if (
       url.origin !== "https://api.sanity.io" ||
-      !url.pathname.startsWith("/v1/context/organizations/")
+      (!organizationEndpoint && !projectDatasetEndpoint)
     )
       throw new Error("INVALID_CONTEXT_ENDPOINT");
     await client.connect(
       new StreamableHTTPClientTransport(url, {
         requestInit: {
-          headers: { Authorization: `Bearer ${c.organizationToken}` },
+          headers: { Authorization: `Bearer ${contextToken}` },
         },
       }),
     );

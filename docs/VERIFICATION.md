@@ -16,24 +16,28 @@
   server creation time `2026-09-22T01:36:49Z`.
 - Initial seed write/readback: 12 documents, three sealed synthetic historical events.
 - Subsequent browser-created synthetic events were read back from Sanity.
-- Final local API readback: HTTP 200, `sanity-groq`, 25 documents and five sealed
-  events (three fixtures plus two browser-test events).
+- Current Content Lake readback: HTTP 200 with 46 documents and eight sealed
+  synthetic historical events; repeated earlier E2E runs account for the extra demo records.
+- Hosted Studio deployment succeeded at `https://tell-me-more-xu-neng.sanity.studio/`
+  and redeployed the schema successfully.
+- Sanity Context `tools/list` returns `initial_context`, `groq_query`,
+  `schema_explorer`, and `array_field_reader`.
+- `npm run verify:sanity` reports `contextConfigured: true` and
+  `retrievalMode: context`.
 - Exact local token scan: no token found in 41 tracked files or 11 browser bundles.
 
 ## Not claimed as complete
 
-- Context organization endpoint/token are not configured. Verified retrieval mode
-  is `sanity-groq`, not `context`. Path One Context acceptance remains blocked.
+- The newer organization-named MCP endpoint has not been created in the Context
+  Dashboard. The running demo instead uses Sanity's verified project/dataset Context
+  endpoint; the adapter supports both endpoint forms.
 - Image bytes remain user-held; the demo archives metadata and a byte hash only.
 - Personal data uses local storage while the provisioned dataset is public.
 - No submission video or public deployment has been created.
 
 ## External handoff
 
-The unclaimed Sanity project expires at **2026-09-25 01:10 UTC**. The next manual
-step is to open the private `sanity/claim-project.html` and claim the project into
-the user's organization. Context then requires the organization enablement,
-dataset-source MCP endpoint, and organization Context Viewer grant described in
-README. These cannot be substituted with the provisional project write token.
+No Sanity claim step remains. The project is organization-owned, Context is installed,
+a Context Viewer organization token exists, and the hosted Studio is deployed.
 
 The local app listens at **http://127.0.0.1:3000**. Restart with `npm run dev`.

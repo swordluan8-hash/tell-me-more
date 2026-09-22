@@ -16,7 +16,12 @@ try {
         dataset: c.dataset,
         documents: docs.length,
         events: docs.filter((d) => d._type === "historicalEvent").length,
-        contextConfigured: !!(c.contextUrl && c.organizationToken),
+        contextConfigured: !!(
+          c.contextUrl &&
+          (c.contextUrl.includes("/context/organizations/")
+            ? c.organizationToken
+            : c.token)
+        ),
         retrievalMode: retrieval.mode,
         notice: retrieval.notice,
       },
