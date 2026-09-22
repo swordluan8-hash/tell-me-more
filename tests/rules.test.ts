@@ -101,6 +101,7 @@ describe("product constitution", () => {
       "partnership/choices [core]",
       "  summary",
       "information/gaps",
+      "decision_rationale [core]",
       "  summary",
       "Knowledge base id: \`kb-other\`",
       "other/path",
@@ -108,13 +109,15 @@ describe("product constitution", () => {
     expect(parseKnowledgeBasePaths(initial, "kb-test")).toEqual([
       "partnership/choices",
       "information/gaps",
+      "decision_rationale",
     ]);
+    const compactTitle = events[2].title.replace(/\s+/g, "");
     const matched = matchKnowledgeBaseEvents(
-      `candidate demo-event-1 and ${events[2].title}`,
+      `candidate demo-event-1 and ${compactTitle} on ${events[1].eventStartDate}`,
       events,
     );
     expect(matched.map((event) => event._id).sort()).toEqual(
-      [events[0]._id, events[2]._id].sort(),
+      [events[0]._id, events[1]._id, events[2]._id].sort(),
     );
   });
 

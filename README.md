@@ -60,26 +60,32 @@ npm run verify:sanity          # prints only safe project/retrieval status
 npm run schema:deploy
 ```
 
-**Sanity Context is now verified.** Context is installed for the organization,
-an organization-level Context Viewer token has been provisioned, and the hosted
-Studio/schema prerequisite is deployed. The running demo uses the verified
-project/dataset Context endpoint:
+**Sanity Context + Knowledge Base are verified.** Context is installed for the
+organization, an organization-level Context Viewer token has been provisioned, and
+the hosted Studio/schema prerequisite is deployed. The submission demo uses the
+organization MCP endpoint backed by Knowledge Base `kbrqT3iILYmW`:
 
 ```dotenv
-SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-03-03/context/mcp/3tdecpiq/production
+SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/ok578v8vm/mcp/tell-me-more
+SANITY_KNOWLEDGE_BASE_ID=kbrqT3iILYmW
 ```
 
-That endpoint authenticates server-side and returns `initial_context`, `groq_query`,
-`schema_explorer`, and `array_field_reader`. The adapter also supports the newer
-organization-named endpoint form (`/v1/context/organizations/.../mcp/...`) and uses
-the organization Context token for that form. Tokens remain only in gitignored
-`sanity/.env.local`.
+The production MCP exposes `initial_context` and `knowledge_base_read`. Tokens
+remain only in gitignored `sanity/.env.local`.
 
-The adapter lists tools, requires `groq_query`, calls it for outcome-free candidate
-IDs, reads back complete structured events, and reranks only those candidates.
-MCP errors still produce an explicit Content Lake fallback. Knowledge Base mode and
-model-generated semantic queries are not used. **Path One Context acceptance is now
-satisfied by live Context MCP retrieval.**
+The Knowledge Base dataset source deliberately projects only decision-time structure:
+event context, role, known information, visible options, constraints/resources,
+technology limits, decision nodes, chosen action, historical-best statement and the
+user's reason. Outcome, later evaluation, reflection and later-learned fields are not
+ingested. Context retrieves candidate historical material; the application then
+maps it back to sealed Content Lake records and performs its own deterministic
+pre-decision similarity reranking. KB prose is not used as a final recommendation.
+MCP failures still produce an explicit Content Lake fallback.
+
+For submission freeze the Content Lake contains exactly the 12 canonical seed
+documents and 3 sealed historical events. The clean Knowledge Base was rebuilt from
+those 3 events and produced 5 entries with 0 issues. **Path One Knowledge Base-backed
+Context acceptance is satisfied by live MCP retrieval.**
 
 References verified on 2026-09-22:
 [AI coding-agent quickstart](https://www.sanity.io/docs/getting-started/ai-coding-agents),

@@ -43,31 +43,50 @@ export function parseKnowledgeBasePaths(
     ...new Set(
       section
         .split("\n")
-        .map((line) => line.trim())
-        .filter((line) =>
-          /^[a-z0-9][a-z0-9_-]*\/[a-z0-9][a-z0-9_/-]*(?: \[[^\]]+\])?$/i.test(
-            line,
-          ),
+        .filter(
+          (line) =>
+            !/^\s/.test(line) &&
+            /^[a-z0-9][a-z0-9_-]*(?:\/[a-z0-9][a-z0-9_-]*)*(?: \[[^\]]+\])?$/i.test(
+              line,
+            ),
         )
         .map((line) => line.replace(/ \[[^\]]+\]$/, "")),
     ),
   ].slice(0, 20);
 }
 
+function normalizeIdentity(value: string) {
+  return value.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
+}
+
 export function matchKnowledgeBaseEvents(
   knowledgeText: string,
   events: HistoricalEvent[],
 ) {
+  const normalizedText = normalizeIdentity(knowledgeText);
   const titleCounts = new Map<string, number>();
-  for (const event of events)
-    titleCounts.set(event.title, (titleCounts.get(event.title) || 0) + 1);
-  return events.filter(
-    (event) =>
+  const dateCounts = new Map<string, number>();
+  for (const event of events) {
+    const title = normalizeIdentity(event.title);
+    titleCounts.set(title, (titleCounts.get(title) || 0) + 1);
+    if (event.eventStartDate)
+      dateCounts.set(
+        event.eventStartDate,
+        (dateCounts.get(event.eventStartDate) || 0) + 1,
+      );
+  }
+  return events.filter((event) => {
+    const title = normalizeIdentity(event.title);
+    return (
       knowledgeText.includes(event._id) ||
-      (event.title.length > 0 &&
-        titleCounts.get(event.title) === 1 &&
-        knowledgeText.includes(event.title)),
-  );
+      (title.length > 0 &&
+        titleCounts.get(title) === 1 &&
+        normalizedText.includes(title)) ||
+      (!!event.eventStartDate &&
+        dateCounts.get(event.eventStartDate) === 1 &&
+        knowledgeText.includes(event.eventStartDate))
+    );
+  });
 }
 
 function toolText(result: ToolResult) {
