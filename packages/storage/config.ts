@@ -1,11 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+
 export function rootDir() {
   return path.basename(process.cwd()) === "web" ||
     path.basename(process.cwd()) === "sanity"
     ? path.resolve(process.cwd(), "..")
     : process.cwd();
 }
+
 export function serverConfig() {
   const file = path.join(rootDir(), "sanity", ".env.local");
   const local: Record<string, string> = {};
@@ -21,6 +23,7 @@ export function serverConfig() {
     token: get("SANITY_AUTH_TOKEN"),
     contextUrl: get("SANITY_CONTEXT_MCP_URL"),
     organizationToken: get("SANITY_ORGANIZATION_TOKEN"),
+    knowledgeBaseId: get("SANITY_KNOWLEDGE_BASE_ID"),
     storage: process.env.TMM_STORAGE || "sanity",
     privateDataset: get("TMM_PRIVATE_DATASET") === "true",
   };

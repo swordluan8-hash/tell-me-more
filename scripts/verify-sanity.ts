@@ -16,6 +16,8 @@ try {
         dataset: c.dataset,
         documents: docs.length,
         events: docs.filter((d) => d._type === "historicalEvent").length,
+        knowledgeBaseId: c.knowledgeBaseId || null,
+        knowledgeBaseConfigured: !!c.knowledgeBaseId,
         contextConfigured: !!(
           c.contextUrl &&
           (c.contextUrl.includes("/context/organizations/")

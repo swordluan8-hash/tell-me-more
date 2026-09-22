@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mkdtemp } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { demoDocuments } from "../packages/domain/seed";
@@ -20,7 +21,11 @@ import {
   LocalRepository,
   rejectMutation,
 } from "../packages/storage/repository";
-import { candidateQuery } from "../packages/storage/context";
+import {
+  candidateQuery,
+  matchKnowledgeBaseEvents,
+  parseKnowledgeBasePaths,
+} from "../packages/storage/context";
 
 const docs = demoDocuments();
 const events = docs.filter(
@@ -89,6 +94,41 @@ describe("product constitution", () => {
       /outcome|result|evaluation|reflection|laterLearned/i,
     );
   });
+  it("knowledge base retrieval uses explicit outline paths and exact historical identities", () => {
+    const initial = [
+      "# Knowledge bases",
+      "Knowledge base id: \`kb-test\`",
+      "partnership/choices [core]",
+      "  summary",
+      "information/gaps",
+      "  summary",
+      "Knowledge base id: \`kb-other\`",
+      "other/path",
+    ].join("\n");
+    expect(parseKnowledgeBasePaths(initial, "kb-test")).toEqual([
+      "partnership/choices",
+      "information/gaps",
+    ]);
+    const matched = matchKnowledgeBaseEvents(
+      `candidate demo-event-1 and ${events[2].title}`,
+      events,
+    );
+    expect(matched.map((event) => event._id).sort()).toEqual(
+      [events[0]._id, events[2]._id].sort(),
+    );
+  });
+
+  it("knowledge base dataset source cannot ingest post-decision outcome or hindsight fields", () => {
+    const source = readFileSync(
+      new URL("../sanity/knowledge-base-source.groq", import.meta.url),
+      "utf8",
+    );
+    expect(source).toMatch(/historicalBestDecisionStatement/);
+    expect(source).not.toMatch(
+      /outcome|reflection|evaluation|laterLearned|immediateResult|longTermResult|userEvaluationLater/i,
+    );
+  });
+
   it("weights sum to 100, unknowns lower coverage without renormalization", () => {
     expect(dimensions.reduce((s, d) => s + d.weight, 0)).toBe(100);
     const e = structuredClone(events[0]);

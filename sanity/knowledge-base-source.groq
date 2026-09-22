@@ -1,0 +1,43 @@
+*[
+  _type == "historicalEvent" &&
+  userId == "single-user" &&
+  status == "sealed" &&
+  demo == true
+]{
+  _id,
+  _type,
+  title,
+  eventStartDate,
+  eventEndDate,
+  datePrecision,
+  fields{event, role, knowledge, options, reason},
+  features,
+  objectiveContext,
+  location,
+  physicalEnvironment,
+  socialEnvironment,
+  userRoleAndPosition,
+  knownAtTheTime,
+  availableOptions,
+  visibleOptionsLimitations,
+  goalsAtTheTime,
+  constraintsAtTheTime,
+  resourcesAtTheTime,
+  technologyLimitations,
+  cognitionSlices,
+  decisionNodes[]{
+    decisionId,
+    decisionTime,
+    trigger,
+    informationAvailable,
+    cognitionAtDecision,
+    optionsVisible,
+    optionsNotVisibleOrUnknown,
+    goal,
+    constraints,
+    resources,
+    chosenAction,
+    historicalBestDecisionStatement,
+    reasonInUserWords
+  }
+}
