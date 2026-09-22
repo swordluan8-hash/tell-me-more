@@ -1,22 +1,263 @@
-import {defineType,defineField,defineArrayMember} from 'sanity';
-import {dimensions,interviewFields,planeFields} from '../../packages/domain/catalog';
-const str=(name:string,type='string')=>defineField({name,type});
-const strings=(name:string)=>defineField({name,type:'array',of:[defineArrayMember({type:'string'})]});
-const refs=(name:string,to:string[])=>defineField({name,type:'array',of:[defineArrayMember({type:'reference',to:to.map(type=>({type}))})]});
-const list=(name:string,type:string)=>defineField({name,type:'array',of:[defineArrayMember({type})]});
-const fact=(name:string)=>defineField({name,type:'recordedAnswer',validation:r=>r.required()});
-const allTypes=['artifact','memoryStatement','historicalEvent','cognitionPlane','baselineT0','empowermentSession'];
-const source=defineType({name:'sourceProvenance',type:'object',fields:[defineField({name:'sourceRef',type:'reference',to:allTypes.map(type=>({type})),validation:r=>r.required()}),str('sourceField'),defineField({name:'strength',type:'string',options:{list:['CONTEMPORARY_RECORD','LATER_RECALL','CROSS_OBJECT_SUPPORT','AI_INFERENCE']},validation:r=>r.required()}),str('quote','text'),str('recordedAt','datetime')]});
-const recordedAnswer=defineType({name:'recordedAnswer',type:'object',fields:[defineField({name:'state',type:'string',options:{list:['known','unknown','forgotten','cannot_judge','not_applicable']},validation:r=>r.required()}),defineField({name:'text',type:'text',validation:r=>r.required()}),defineField({...list('provenance','sourceProvenance'),validation:r=>r.required().min(1)})]});
-const decision=defineType({name:'decisionNode',type:'object',fields:[str('decisionId'),...['decisionTime','trigger','informationAvailable','cognitionAtDecision','optionsVisible','optionsNotVisibleOrUnknown','goal','constraints','resources','chosenAction','historicalBestDecisionStatement','reasonInUserWords','immediateResult','longTermResult','userEvaluationLater'].map(fact),list('provenanceRefs','sourceProvenance')]});
-const common=[str('userId'),str('demo','boolean'),defineField({name:'status',type:'string',options:{list:['sealed']},validation:r=>r.required()}),str('recordedAt','datetime'),str('sealedAt','datetime')];
-const document=(name:string,fields:ReturnType<typeof defineField>[])=>defineType({name,type:'document',readOnly:true,fields:[...common,...fields],preview:{select:{title:'title',subtitle:'status'}}});
-const component=defineType({name:'similarityComponent',type:'object',fields:[str('key'),str('label'),str('weight','number'),str('earned','number'),str('comparable','boolean'),strings('matched'),strings('currentOnly'),strings('historicalOnly'),str('currentSource'),str('historicalSource'),defineField({name:'eventRef',type:'reference',to:[{type:'historicalEvent'}]}),list('provenance','sourceProvenance')]});
-export const schemaTypes=[source,recordedAnswer,decision,component,
- document('artifact',[str('title'),str('kind'),str('originalText','text'),fact('originalDate'),str('sha256'),defineField({name:'fileMetadata',type:'object',fields:[str('name'),str('mimeType'),str('size','number'),str('path'),str('contentHash')]})]),
- document('memoryStatement',[str('verbatim','text'),refs('artifactRefs',['artifact']),refs('eventRefs',['historicalEvent']),defineField({name:'classifications',type:'array',of:[defineArrayMember({type:'object',fields:[str('field'),str('quote','text'),str('sourceField')]})]}),list('sourceProvenance','sourceProvenance')]),
- document('historicalEvent',[str('title'),str('confirmedAt','datetime'),str('eventStartDate','date'),str('eventEndDate','date'),str('datePrecision'),refs('artifactRefs',['artifact']),refs('memoryRefs',['memoryStatement']),defineField({name:'fields',type:'object',fields:interviewFields.map(([k])=>fact(k))}),defineField({name:'features',type:'object',fields:dimensions.map(({key})=>fact(key))}),...['objectiveContext','location','physicalEnvironment','socialEnvironment','userRoleAndPosition','finalUserEvaluation'].map(fact),...['knownAtTheTime','laterLearned','availableOptions','visibleOptionsLimitations','goalsAtTheTime','constraintsAtTheTime','resourcesAtTheTime','technologyLimitations','cognitionSlices','outcomeFacts','laterEvaluations','currentInterpretations'].map(n=>list(n,'recordedAnswer')),list('decisionNodes','decisionNode'),list('sourceProvenance','sourceProvenance'),refs('relatedEventRefs',['historicalEvent']),refs('appendOnlyRevisionRefs',['historicalEvent','memoryStatement'])]),
- document('cognitionPlane',[str('title'),str('periodStart','date'),str('periodEnd','date'),str('anchorType'),refs('sourceEventRefs',['historicalEvent']),list('sourceProvenance','sourceProvenance'),defineField({name:'fields',type:'object',fields:planeFields.map(fact)}),defineField({name:'confidenceByField',type:'array',of:[defineArrayMember({type:'object',fields:[str('field'),str('strength')]})]}),strings('unknownFields')]),
- document('baselineT0',[defineField({name:'answers',type:'array',validation:r=>r.length(10),of:[defineArrayMember({type:'object',fields:[str('question','number'),str('choice','number'),str('text')]})]}),defineField({name:'planeRef',type:'reference',to:[{type:'cognitionPlane'}]})]),
- document('empowermentSession',[defineField({name:'current',type:'object',fields:['happened','urgency','options','stuck'].map(n=>str(n,'text'))}),defineField({name:'currentFeatures',type:'object',fields:dimensions.map(({key})=>fact(key))}),str('retrievalMode'),str('retrievalNotice','text'),defineField({name:'matches',type:'array',of:[defineArrayMember({type:'object',fields:[defineField({name:'eventRef',type:'reference',to:[{type:'historicalEvent'}]}),str('score','number'),str('coverage','number'),list('components','similarityComponent')]})]}),list('sourceProvenance','sourceProvenance'),str('conclusion')]),
-];
+import {defineType, defineField, defineArrayMember} from 'sanity'
+import {dimensions, interviewFields, planeFields} from '../../packages/domain/catalog'
+const str = (name: string, type = 'string') => defineField({name, type})
+const strings = (name: string) =>
+  defineField({name, type: 'array', of: [defineArrayMember({type: 'string'})]})
+const refs = (name: string, to: string[]) =>
+  defineField({
+    name,
+    type: 'array',
+    of: [defineArrayMember({type: 'reference', to: to.map((type) => ({type}))})],
+  })
+const list = (name: string, type: string) =>
+  defineField({name, type: 'array', of: [defineArrayMember({type})]})
+const fact = (name: string) =>
+  defineField({name, type: 'recordedAnswer', validation: (r) => r.required()})
+const allTypes = [
+  'artifact',
+  'memoryStatement',
+  'historicalEvent',
+  'cognitionPlane',
+  'baselineT0',
+  'empowermentSession',
+]
+const source = defineType({
+  name: 'sourceProvenance',
+  type: 'object',
+  fields: [
+    defineField({
+      name: 'sourceRef',
+      type: 'reference',
+      to: allTypes.map((type) => ({type})),
+      validation: (r) => r.required(),
+    }),
+    str('sourceField'),
+    defineField({
+      name: 'strength',
+      type: 'string',
+      options: {
+        list: ['CONTEMPORARY_RECORD', 'LATER_RECALL', 'CROSS_OBJECT_SUPPORT', 'AI_INFERENCE'],
+      },
+      validation: (r) => r.required(),
+    }),
+    str('quote', 'text'),
+    str('recordedAt', 'datetime'),
+  ],
+})
+const recordedAnswer = defineType({
+  name: 'recordedAnswer',
+  type: 'object',
+  fields: [
+    defineField({
+      name: 'state',
+      type: 'string',
+      options: {list: ['known', 'unknown', 'forgotten', 'cannot_judge', 'not_applicable']},
+      validation: (r) => r.required(),
+    }),
+    defineField({name: 'text', type: 'text', validation: (r) => r.required()}),
+    defineField({
+      ...list('provenance', 'sourceProvenance'),
+      validation: (r) => r.required().min(1),
+    }),
+  ],
+})
+const decision = defineType({
+  name: 'decisionNode',
+  type: 'object',
+  fields: [
+    str('decisionId'),
+    ...[
+      'decisionTime',
+      'trigger',
+      'informationAvailable',
+      'cognitionAtDecision',
+      'optionsVisible',
+      'optionsNotVisibleOrUnknown',
+      'goal',
+      'constraints',
+      'resources',
+      'chosenAction',
+      'historicalBestDecisionStatement',
+      'reasonInUserWords',
+      'immediateResult',
+      'longTermResult',
+      'userEvaluationLater',
+    ].map(fact),
+    list('provenanceRefs', 'sourceProvenance'),
+  ],
+})
+const common = [
+  str('userId'),
+  str('demo', 'boolean'),
+  defineField({
+    name: 'status',
+    type: 'string',
+    options: {list: ['sealed']},
+    validation: (r) => r.required(),
+  }),
+  str('recordedAt', 'datetime'),
+  str('sealedAt', 'datetime'),
+]
+const document = (name: string, fields: ReturnType<typeof defineField>[]) =>
+  defineType({
+    name,
+    type: 'document',
+    readOnly: true,
+    fields: [...common, ...fields],
+    preview: {select: {title: 'title', subtitle: 'status'}},
+  })
+const component = defineType({
+  name: 'similarityComponent',
+  type: 'object',
+  fields: [
+    str('key'),
+    str('label'),
+    str('weight', 'number'),
+    str('earned', 'number'),
+    str('comparable', 'boolean'),
+    strings('matched'),
+    strings('currentOnly'),
+    strings('historicalOnly'),
+    str('currentSource'),
+    str('historicalSource'),
+    defineField({name: 'eventRef', type: 'reference', to: [{type: 'historicalEvent'}]}),
+    list('provenance', 'sourceProvenance'),
+  ],
+})
+export const schemaTypes = [
+  source,
+  recordedAnswer,
+  decision,
+  component,
+  document('artifact', [
+    str('title'),
+    str('kind'),
+    str('originalText', 'text'),
+    fact('originalDate'),
+    str('sha256'),
+    defineField({
+      name: 'fileMetadata',
+      type: 'object',
+      fields: [
+        str('name'),
+        str('mimeType'),
+        str('size', 'number'),
+        str('path'),
+        str('contentHash'),
+      ],
+    }),
+  ]),
+  document('memoryStatement', [
+    str('verbatim', 'text'),
+    refs('artifactRefs', ['artifact']),
+    refs('eventRefs', ['historicalEvent']),
+    defineField({
+      name: 'classifications',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          fields: [str('field'), str('quote', 'text'), str('sourceField')],
+        }),
+      ],
+    }),
+    list('sourceProvenance', 'sourceProvenance'),
+  ]),
+  document('historicalEvent', [
+    str('title'),
+    str('confirmedAt', 'datetime'),
+    str('eventStartDate', 'date'),
+    str('eventEndDate', 'date'),
+    str('datePrecision'),
+    refs('artifactRefs', ['artifact']),
+    refs('memoryRefs', ['memoryStatement']),
+    defineField({name: 'fields', type: 'object', fields: interviewFields.map(([k]) => fact(k))}),
+    defineField({name: 'features', type: 'object', fields: dimensions.map(({key}) => fact(key))}),
+    ...[
+      'objectiveContext',
+      'location',
+      'physicalEnvironment',
+      'socialEnvironment',
+      'userRoleAndPosition',
+      'finalUserEvaluation',
+    ].map(fact),
+    ...[
+      'knownAtTheTime',
+      'laterLearned',
+      'availableOptions',
+      'visibleOptionsLimitations',
+      'goalsAtTheTime',
+      'constraintsAtTheTime',
+      'resourcesAtTheTime',
+      'technologyLimitations',
+      'cognitionSlices',
+      'outcomeFacts',
+      'laterEvaluations',
+      'currentInterpretations',
+    ].map((n) => list(n, 'recordedAnswer')),
+    list('decisionNodes', 'decisionNode'),
+    list('sourceProvenance', 'sourceProvenance'),
+    refs('relatedEventRefs', ['historicalEvent']),
+    refs('appendOnlyRevisionRefs', ['historicalEvent', 'memoryStatement']),
+  ]),
+  document('cognitionPlane', [
+    str('title'),
+    str('periodStart', 'date'),
+    str('periodEnd', 'date'),
+    str('anchorType'),
+    refs('sourceEventRefs', ['historicalEvent']),
+    list('sourceProvenance', 'sourceProvenance'),
+    defineField({name: 'fields', type: 'object', fields: planeFields.map(fact)}),
+    defineField({
+      name: 'confidenceByField',
+      type: 'array',
+      of: [defineArrayMember({type: 'object', fields: [str('field'), str('strength')]})],
+    }),
+    strings('unknownFields'),
+  ]),
+  document('baselineT0', [
+    defineField({
+      name: 'answers',
+      type: 'array',
+      validation: (r) => r.length(10),
+      of: [
+        defineArrayMember({
+          type: 'object',
+          fields: [str('question', 'number'), str('choice', 'number'), str('text')],
+        }),
+      ],
+    }),
+    defineField({name: 'planeRef', type: 'reference', to: [{type: 'cognitionPlane'}]}),
+  ]),
+  document('empowermentSession', [
+    defineField({
+      name: 'current',
+      type: 'object',
+      fields: ['happened', 'urgency', 'options', 'stuck'].map((n) => str(n, 'text')),
+    }),
+    defineField({
+      name: 'currentFeatures',
+      type: 'object',
+      fields: dimensions.map(({key}) => fact(key)),
+    }),
+    str('retrievalMode'),
+    str('retrievalNotice', 'text'),
+    defineField({
+      name: 'matches',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          fields: [
+            defineField({name: 'eventRef', type: 'reference', to: [{type: 'historicalEvent'}]}),
+            str('score', 'number'),
+            str('coverage', 'number'),
+            list('components', 'similarityComponent'),
+          ],
+        }),
+      ],
+    }),
+    list('sourceProvenance', 'sourceProvenance'),
+    str('conclusion'),
+  ]),
+]

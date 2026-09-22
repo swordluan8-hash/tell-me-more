@@ -1,29 +1,238 @@
-import {z} from 'zod';
-import {dimensions, interviewFields, planeFields} from './catalog';
+import { z } from "zod";
+import { dimensions, interviewFields, planeFields } from "./catalog";
 
-export const reference = z.object({_type:z.literal('reference'), _ref:z.string().min(1), _key:z.string().optional()});
-export const provenance = z.object({sourceRef:reference, sourceField:z.string().min(1), strength:z.enum(['CONTEMPORARY_RECORD','LATER_RECALL','CROSS_OBJECT_SUPPORT','AI_INFERENCE']), quote:z.string(), recordedAt:z.string().datetime()});
-export const answer = z.object({state:z.enum(['known','unknown','forgotten','cannot_judge','not_applicable']), text:z.string().min(1).max(20000), provenance:z.array(provenance).min(1)});
+export const reference = z.object({
+  _type: z.literal("reference"),
+  _ref: z.string().min(1),
+  _key: z.string().optional(),
+});
+export const provenance = z.object({
+  sourceRef: reference,
+  sourceField: z.string().min(1),
+  strength: z.enum([
+    "CONTEMPORARY_RECORD",
+    "LATER_RECALL",
+    "CROSS_OBJECT_SUPPORT",
+    "AI_INFERENCE",
+  ]),
+  quote: z.string(),
+  recordedAt: z.string().datetime(),
+});
+export const answer = z.object({
+  state: z.enum([
+    "known",
+    "unknown",
+    "forgotten",
+    "cannot_judge",
+    "not_applicable",
+  ]),
+  text: z
+    .string()
+    .min(1)
+    .max(20000)
+    .refine((text) => text.trim().length > 0, "Empty answers are not complete"),
+  provenance: z.array(provenance).min(1),
+});
 export type Answer = z.infer<typeof answer>;
 export type Provenance = z.infer<typeof provenance>;
-const keyedAnswers = <T extends string>(keys:readonly T[]) => z.object(Object.fromEntries(keys.map(k=>[k,answer])) as Record<T,typeof answer>);
-export const fieldAnswers = keyedAnswers(interviewFields.map(([key])=>key));
-export const featureAnswers = keyedAnswers(dimensions.map(d=>d.key));
+const keyedAnswers = <T extends string>(keys: readonly T[]) =>
+  z.object(
+    Object.fromEntries(keys.map((k) => [k, answer])) as Record<
+      T,
+      typeof answer
+    >,
+  );
+export const fieldAnswers = keyedAnswers(interviewFields.map(([key]) => key));
+export const featureAnswers = keyedAnswers(dimensions.map((d) => d.key));
 export type Features = z.infer<typeof featureAnswers>;
-const common = {_id:z.string().min(1), userId:z.literal('single-user'), demo:z.boolean(), status:z.literal('sealed'), recordedAt:z.string().datetime(), sealedAt:z.string().datetime()};
-export const artifact = z.object({...common,_type:z.literal('artifact'),title:z.string().min(1).max(200),kind:z.enum(['text','image_metadata']),originalText:z.string(),originalDate:answer,sha256:z.string().regex(/^[a-f0-9]{64}$/),fileMetadata:z.object({name:z.string(),mimeType:z.string(),size:z.number().nonnegative(),path:z.string(),contentHash:z.string().optional()}).optional()});
-export const memoryStatement = z.object({...common,_type:z.literal('memoryStatement'),verbatim:z.string().min(1),artifactRefs:z.array(reference),eventRefs:z.array(reference),classifications:z.array(z.object({field:z.string(),quote:z.string(),sourceField:z.string()})),sourceProvenance:z.array(provenance).min(1)});
-export const decisionNode = z.object({decisionId:z.string(),decisionTime:answer,trigger:answer,informationAvailable:answer,cognitionAtDecision:answer,optionsVisible:answer,optionsNotVisibleOrUnknown:answer,goal:answer,constraints:answer,resources:answer,chosenAction:answer,historicalBestDecisionStatement:answer,reasonInUserWords:answer,immediateResult:answer,longTermResult:answer,userEvaluationLater:answer,provenanceRefs:z.array(provenance).min(1)});
-export const historicalEvent = z.object({...common,_type:z.literal('historicalEvent'),title:z.string().min(1),confirmedAt:z.string().datetime(),eventStartDate:z.string().nullable(),eventEndDate:z.string().nullable(),datePrecision:z.enum(['day','month','year','unknown']),artifactRefs:z.array(reference).min(1),memoryRefs:z.array(reference).min(1),fields:fieldAnswers,features:featureAnswers,objectiveContext:answer,location:answer,physicalEnvironment:answer,socialEnvironment:answer,userRoleAndPosition:answer,knownAtTheTime:z.array(answer),laterLearned:z.array(answer),availableOptions:z.array(answer),visibleOptionsLimitations:z.array(answer),goalsAtTheTime:z.array(answer),constraintsAtTheTime:z.array(answer),resourcesAtTheTime:z.array(answer),technologyLimitations:z.array(answer),cognitionSlices:z.array(answer),decisionNodes:z.array(decisionNode).min(1),outcomeFacts:z.array(answer),laterEvaluations:z.array(answer),currentInterpretations:z.array(answer),finalUserEvaluation:answer,sourceProvenance:z.array(provenance).min(1),relatedEventRefs:z.array(reference),appendOnlyRevisionRefs:z.array(reference)});
-export type HistoricalEvent=z.infer<typeof historicalEvent>;
-export const cognitionPlane=z.object({...common,_type:z.literal('cognitionPlane'),title:z.string(),periodStart:z.string(),periodEnd:z.string(),anchorType:z.enum(['T0','reconstructed_past','future_observed']),sourceEventRefs:z.array(reference),sourceProvenance:z.array(provenance).min(1),fields:keyedAnswers(planeFields),confidenceByField:z.array(z.object({field:z.string(),strength:provenance.shape.strength})),unknownFields:z.array(z.string())});
-export const baselineT0=z.object({...common,_type:z.literal('baselineT0'),answers:z.array(z.object({question:z.number().int().min(0).max(9),choice:z.number().int().min(0).max(2),text:z.string()})).length(10),planeRef:reference});
-export const currentDecision=z.object({happened:z.string().trim().min(1).max(4000),urgency:z.string().trim().min(1).max(4000),options:z.string().trim().min(1).max(4000),stuck:z.string().trim().min(1).max(4000)});
-export const similarityComponent=z.object({key:z.string(),label:z.string(),weight:z.number(),earned:z.number(),comparable:z.boolean(),matched:z.array(z.string()),currentOnly:z.array(z.string()),historicalOnly:z.array(z.string()),currentSource:z.string(),historicalSource:z.string(),eventRef:reference,provenance:z.array(provenance).min(1)});
-export const match=z.object({eventRef:reference,score:z.number(),coverage:z.number(),components:z.array(similarityComponent)});
-export const empowermentSession=z.object({...common,_type:z.literal('empowermentSession'),current:currentDecision,currentFeatures:featureAnswers,retrievalMode:z.enum(['context','sanity-groq','local-demo']),retrievalNotice:z.string(),matches:z.array(match),sourceProvenance:z.array(provenance),conclusion:z.literal('历史是参照，最终选择由你完成。')});
-export const archiveDocument=z.discriminatedUnion('_type',[artifact,memoryStatement,historicalEvent,cognitionPlane,baselineT0,empowermentSession]);
-export type ArchiveDocument=z.infer<typeof archiveDocument>;
-export const ref=(id:string)=>({_type:'reference' as const,_ref:id});
-export function evidence(id:string,field:string,text:string,strength:Provenance['strength']='LATER_RECALL',now=new Date().toISOString()):Provenance{return {sourceRef:ref(id),sourceField:field,strength,quote:text,recordedAt:now};}
-export function stated(text:string,id:string,field:string,state:Answer['state']='known'):Answer{return {text,state,provenance:[evidence(id,field,text)]};}
+const common = {
+  _id: z.string().min(1),
+  userId: z.literal("single-user"),
+  demo: z.boolean(),
+  status: z.literal("sealed"),
+  recordedAt: z.string().datetime(),
+  sealedAt: z.string().datetime(),
+};
+export const artifact = z.object({
+  ...common,
+  _type: z.literal("artifact"),
+  title: z.string().min(1).max(200),
+  kind: z.enum(["text", "image_metadata"]),
+  originalText: z.string(),
+  originalDate: answer,
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  fileMetadata: z
+    .object({
+      name: z.string(),
+      mimeType: z.string(),
+      size: z.number().nonnegative(),
+      path: z.string(),
+      contentHash: z.string().optional(),
+    })
+    .optional(),
+});
+export const memoryStatement = z.object({
+  ...common,
+  _type: z.literal("memoryStatement"),
+  verbatim: z.string().min(1),
+  artifactRefs: z.array(reference),
+  eventRefs: z.array(reference),
+  classifications: z.array(
+    z.object({ field: z.string(), quote: z.string(), sourceField: z.string() }),
+  ),
+  sourceProvenance: z.array(provenance).min(1),
+});
+export const decisionNode = z.object({
+  decisionId: z.string(),
+  decisionTime: answer,
+  trigger: answer,
+  informationAvailable: answer,
+  cognitionAtDecision: answer,
+  optionsVisible: answer,
+  optionsNotVisibleOrUnknown: answer,
+  goal: answer,
+  constraints: answer,
+  resources: answer,
+  chosenAction: answer,
+  historicalBestDecisionStatement: answer,
+  reasonInUserWords: answer,
+  immediateResult: answer,
+  longTermResult: answer,
+  userEvaluationLater: answer,
+  provenanceRefs: z.array(provenance).min(1),
+});
+export const historicalEvent = z.object({
+  ...common,
+  _type: z.literal("historicalEvent"),
+  title: z.string().min(1),
+  confirmedAt: z.string().datetime(),
+  eventStartDate: z.string().nullable(),
+  eventEndDate: z.string().nullable(),
+  datePrecision: z.enum(["day", "month", "year", "unknown"]),
+  artifactRefs: z.array(reference).min(1),
+  memoryRefs: z.array(reference).min(1),
+  fields: fieldAnswers,
+  features: featureAnswers,
+  objectiveContext: answer,
+  location: answer,
+  physicalEnvironment: answer,
+  socialEnvironment: answer,
+  userRoleAndPosition: answer,
+  knownAtTheTime: z.array(answer),
+  laterLearned: z.array(answer),
+  availableOptions: z.array(answer),
+  visibleOptionsLimitations: z.array(answer),
+  goalsAtTheTime: z.array(answer),
+  constraintsAtTheTime: z.array(answer),
+  resourcesAtTheTime: z.array(answer),
+  technologyLimitations: z.array(answer),
+  cognitionSlices: z.array(answer),
+  decisionNodes: z.array(decisionNode).min(1),
+  outcomeFacts: z.array(answer),
+  laterEvaluations: z.array(answer),
+  currentInterpretations: z.array(answer),
+  finalUserEvaluation: answer,
+  sourceProvenance: z.array(provenance).min(1),
+  relatedEventRefs: z.array(reference),
+  appendOnlyRevisionRefs: z.array(reference),
+});
+export type HistoricalEvent = z.infer<typeof historicalEvent>;
+export const cognitionPlane = z.object({
+  ...common,
+  _type: z.literal("cognitionPlane"),
+  title: z.string(),
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  anchorType: z.enum(["T0", "reconstructed_past", "future_observed"]),
+  sourceEventRefs: z.array(reference),
+  sourceProvenance: z.array(provenance).min(1),
+  fields: keyedAnswers(planeFields),
+  confidenceByField: z.array(
+    z.object({ field: z.string(), strength: provenance.shape.strength }),
+  ),
+  unknownFields: z.array(z.string()),
+});
+export const baselineT0 = z.object({
+  ...common,
+  _type: z.literal("baselineT0"),
+  answers: z
+    .array(
+      z.object({
+        question: z.number().int().min(0).max(9),
+        choice: z.number().int().min(0).max(2),
+        text: z.string(),
+      }),
+    )
+    .length(10),
+  planeRef: reference,
+});
+export const currentDecision = z.object({
+  happened: z.string().trim().min(1).max(4000),
+  urgency: z.string().trim().min(1).max(4000),
+  options: z.string().trim().min(1).max(4000),
+  stuck: z.string().trim().min(1).max(4000),
+});
+export const similarityComponent = z.object({
+  key: z.string(),
+  label: z.string(),
+  weight: z.number(),
+  earned: z.number(),
+  comparable: z.boolean(),
+  matched: z.array(z.string()),
+  currentOnly: z.array(z.string()),
+  historicalOnly: z.array(z.string()),
+  currentSource: z.string(),
+  historicalSource: z.string(),
+  eventRef: reference,
+  provenance: z.array(provenance).min(1),
+});
+export const match = z.object({
+  eventRef: reference,
+  score: z.number(),
+  coverage: z.number(),
+  components: z.array(similarityComponent),
+});
+export const empowermentSession = z.object({
+  ...common,
+  _type: z.literal("empowermentSession"),
+  current: currentDecision,
+  currentFeatures: featureAnswers,
+  retrievalMode: z.enum(["context", "sanity-groq", "local-demo"]),
+  retrievalNotice: z.string(),
+  matches: z.array(match),
+  sourceProvenance: z.array(provenance),
+  conclusion: z.literal("历史是参照，最终选择由你完成。"),
+});
+export const archiveDocument = z.discriminatedUnion("_type", [
+  artifact,
+  memoryStatement,
+  historicalEvent,
+  cognitionPlane,
+  baselineT0,
+  empowermentSession,
+]);
+export type ArchiveDocument = z.infer<typeof archiveDocument>;
+export const ref = (id: string) => ({ _type: "reference" as const, _ref: id });
+export function evidence(
+  id: string,
+  field: string,
+  text: string,
+  strength: Provenance["strength"] = "LATER_RECALL",
+  now = new Date().toISOString(),
+): Provenance {
+  return {
+    sourceRef: ref(id),
+    sourceField: field,
+    strength,
+    quote: text,
+    recordedAt: now,
+  };
+}
+export function stated(
+  text: string,
+  id: string,
+  field: string,
+  state: Answer["state"] = "known",
+): Answer {
+  return { text, state, provenance: [evidence(id, field, text)] };
+}

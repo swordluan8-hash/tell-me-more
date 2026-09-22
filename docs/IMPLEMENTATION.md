@@ -13,6 +13,7 @@ Draft interviews stay in the browser until explicit confirmation. Artifact
 creation seals immediately. Later recall is a new document, never a patch.
 
 Official references checked 2026-09-22:
+
 - https://www.sanity.io/docs/getting-started/ai-coding-agents
 - https://sanity.new
 - https://www.sanity.io/docs/ai/sanity-context-quick-start

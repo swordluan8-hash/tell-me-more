@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": ["web", "sanity"],
+  "workspaces": [
+    "web",
+    "sanity"
+  ],
   "scripts": {
     "dev": "npm run dev --workspace web",
     "build": "npm run build --workspace web",
@@ -14,8 +17,20 @@
     "seed": "tsx scripts/seed.ts",
     "verify:sanity": "tsx scripts/verify-sanity.ts",
     "studio": "npm run dev --workspace sanity",
-    "schema:deploy": "npm exec --workspace sanity -- sanity schema deploy"
+    "schema:deploy": "npm run schema:deploy --workspace sanity"
   },
-  "dependencies": {"@sanity/client": "^7.0.0", "@modelcontextprotocol/sdk": "^1.0.0", "zod": "^4.0.0"},
-  "devDependencies": {"typescript": "^5.9.0", "tsx": "^4.0.0", "vitest": "^4.0.0", "@playwright/test": "^1.0.0", "@types/node": "^24.0.0", "eslint": "^9.0.0", "eslint-config-next": "16.3.5"}
+  "dependencies": {
+    "@sanity/client": "^7.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "tsx": "^4.0.0",
+    "vitest": "^4.0.0",
+    "@playwright/test": "^1.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.3.5"
+  }
 }

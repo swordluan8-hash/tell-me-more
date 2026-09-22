@@ -1,4 +1,17 @@
-import {defineConfig,globalIgnores} from 'eslint/config';
-import next from 'eslint-config-next/core-web-vitals';
-import ts from 'eslint-config-next/typescript';
-export default defineConfig([...next,...ts,globalIgnores(['**/.next/**','**/node_modules/**','**/dist/**','**/next-env.d.ts']),{rules:{'react-hooks/set-state-in-effect':'off'}}]);
+import { defineConfig, globalIgnores } from "eslint/config";
+import next from "eslint-config-next/core-web-vitals";
+import ts from "eslint-config-next/typescript";
+export default defineConfig([
+  ...next,
+  ...ts,
+  globalIgnores([
+    "**/.next/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/next-env.d.ts",
+  ]),
+  {
+    settings: { next: { rootDir: "web/" } },
+    rules: { "react-hooks/set-state-in-effect": "off" },
+  },
+]);
