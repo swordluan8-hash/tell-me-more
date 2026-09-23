@@ -15,14 +15,18 @@ import {
   createEvent,
   sealRequest,
 } from "../domain/workflow";
-import { currentFeatures, rank } from "../domain/similarity";
+import { ALGORITHM_VERSION, currentFeatures, rank } from "../domain/similarity";
 import { repository, storageMode } from "../storage/repository";
 import { retrieve } from "../storage/context";
+import { readScenario } from "../storage/scenario";
+import { eligibleHistory } from "../domain/temporal";
+import { auditArchive, auditEvent, applicableSupplements, effectiveEvent } from "../domain/completeness";
+import { buildSupplement } from "../domain/supplements";
 
 const artifactInput = z
   .object({
     title: z.string().trim().min(1).max(200),
-    kind: z.enum(["text", "image_metadata"]),
+    kind: z.enum(["text", "image_metadata", "memory_anchor"]),
     originalText: z.string().max(30000),
     originalDate: z
       .string()
@@ -32,7 +36,7 @@ const artifactInput = z
     fileMetadata: artifact.shape.fileMetadata,
   })
   .superRefine((v, c) => {
-    if (v.kind === "text" && !v.originalText.trim())
+    if ((v.kind === "text" || v.kind === "memory_anchor") && !v.originalText.trim())
       c.addIssue({ code: "custom", message: "请填写原文" });
     if (v.kind === "image_metadata" && !v.fileMetadata)
       c.addIssue({ code: "custom", message: "请提供图片元数据" });
@@ -42,13 +46,32 @@ export async function getArchive(personal = false) {
   return {
     documents: docs.filter((d) => d.demo !== personal),
     mode: storageMode(personal),
+    scenario: readScenario(personal),
   };
 }
 export async function perform(action: string, payload: unknown) {
+  if (action === "gap-audit") {
+    const v = z.object({ demo:z.boolean() }).parse(payload);
+    const docs = (await repository(!v.demo).all()).filter((d) => d.demo === v.demo);
+    return { audit:auditArchive(docs, readScenario(!v.demo)) };
+  }
+  if (action === "fill-gap") {
+    const scope = z.object({demo:z.boolean()}).parse(payload);
+    const repo = repository(!scope.demo);
+    const docs = (await repo.all()).filter((d) => d.demo === scope.demo);
+    const scenario = readScenario(!scope.demo);
+    const built = buildSupplement(payload, docs, scenario);
+    await repo.append([built.document]);
+    const updated = [...docs, built.document];
+    return { document:built.document, savedFields:built.savedFields, audit:auditArchive(updated, scenario), mode:storageMode(!scope.demo) };
+  }
   if (action === "artifact") {
     const v = artifactInput.parse(payload),
       id = randomUUID(),
-      raw = v.kind === "text" ? v.originalText : JSON.stringify(v.fileMetadata);
+      raw =
+        v.kind === "image_metadata"
+          ? JSON.stringify(v.fileMetadata)
+          : v.originalText;
     const document = artifact.parse({
       ...base(id, "artifact", v.demo),
       ...v,
@@ -78,17 +101,15 @@ export async function perform(action: string, payload: unknown) {
     const v = sealRequest.parse(payload),
       repo = repository(!v.demo),
       existing = await repo.all();
-    if (
-      !existing.some(
-        (d) =>
-          d._id === v.artifactId && d._type === "artifact" && d.demo === v.demo,
-      )
-    )
-      throw new Error("ARTIFACT_NOT_FOUND");
-    const documents = createEvent(v, {
-      event: randomUUID(),
-      memory: randomUUID(),
-    });
+    const source = existing.find((d) =>
+      d._id === v.artifactId && d._type === "artifact" && d.demo === v.demo,
+    );
+    if (!source || source._type !== "artifact") throw new Error("ARTIFACT_NOT_FOUND");
+    // Provenance comes from the stored source, never from a client-supplied label.
+    const documents = createEvent({
+      ...v,
+      sourceKind: source.kind === "memory_anchor" ? "memory_anchor" : "object_record",
+    }, { event: randomUUID(), memory: randomUUID() });
     await repo.append(documents);
     return { documents, mode: storageMode(!v.demo) };
   }
@@ -128,10 +149,23 @@ export async function perform(action: string, payload: unknown) {
       id = randomUUID();
     const features = currentFeatures(v.current, id),
       retrieved = await retrieve(features, !v.demo);
-    const matches = rank(features, retrieved.events);
+    const scenario = readScenario(!v.demo);
+    const all = await repository(!v.demo).all();
+    const scoped = eligibleHistory(retrieved.events, all, scenario);
+    const ownDocs = all.filter((d) => d.demo === v.demo);
+    const resolved = scoped.events.map((e) => effectiveEvent(e, ownDocs, scenario));
+    const readiness = auditArchive(ownDocs, scenario);
+    const matches = rank(features, resolved);
     const document = archiveDocument.parse({
       ...base(id, "empowermentSession", v.demo),
       _type: "empowermentSession",
+      algorithmVersion: `${ALGORITHM_VERSION}+gap-loop-v1`,
+      sourceRevisionRefs: applicableSupplements(ownDocs, scenario).map((m) => ref(m._id)),
+      completeness: { assessedNodes:readiness.summary.assessedNodes, coreCompleteNodes:readiness.summary.coreCompleteNodes,
+        pendingFields:readiness.summary.pendingFields, basis:readiness.basis },
+      candidateCount: scoped.events.length,
+      excludedByTime: scoped.excluded,
+      scenario: scenario ? { id: scenario.id, asOfDate: scenario.asOfDate, timeZone: scenario.timeZone } : undefined,
       current: v.current,
       currentFeatures: features,
       retrievalMode: retrieved.mode,
@@ -143,7 +177,9 @@ export async function perform(action: string, payload: unknown) {
       conclusion: "历史是参照，最终选择由你完成。",
     });
     await repository(!v.demo).append([document]);
-    return { document, events: retrieved.events };
+    return { document, events: resolved, scenario,
+      readiness: resolved.map((e) => auditEvent(ownDocs.find((d) => d._id === e._id) as typeof e, ownDocs, scenario)) };
+
   }
   throw new Error("UNKNOWN_ACTION");
 }

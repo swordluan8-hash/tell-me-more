@@ -159,6 +159,14 @@ describe("product constitution", () => {
       createEvent({ confirmed: false }, { event: "e", memory: "m" }),
     ).toThrow();
   });
+  it("accepts a memory anchor as a distinct historical source kind", () => {
+    const source = structuredClone(docs.find((d) => d._type === "artifact")!);
+    if (source._type !== "artifact") throw new Error("artifact seed missing");
+    source.kind = "memory_anchor";
+    source.originalText = "我记得自己在上海搬过很多次家。";
+    expect(archiveDocument.safeParse(source).success).toBe(true);
+  });
+
   it("classifies only explicit user labels, preserving exact words and asking only remaining gaps", () => {
     const fields = classifyExplicitNarration(
       "发生了什么： 一次合作。\n当时知道什么：记不清\n其他自由叙述不被猜测。",

@@ -149,6 +149,11 @@ export const schemaTypes = [
   ]),
   document('memoryStatement', [
     str('verbatim', 'text'),
+    defineField({name:'collectionContext', type:'object', fields:[str('scenarioId'), str('viewpointDate','date')]}),
+    defineField({name:'supplements', type:'array', of:[defineArrayMember({type:'object', fields:[
+      defineField({name:'eventRef', type:'reference', to:[{type:'historicalEvent'}]}),
+      str('decisionId'), str('field'), fact('answer'),
+    ]})]}),
     refs('artifactRefs', ['artifact']),
     refs('eventRefs', ['historicalEvent']),
     defineField({
@@ -230,6 +235,12 @@ export const schemaTypes = [
     defineField({name: 'planeRef', type: 'reference', to: [{type: 'cognitionPlane'}]}),
   ]),
   document('empowermentSession', [
+    str('algorithmVersion'),
+    refs('sourceRevisionRefs', ['memoryStatement']),
+    defineField({name:'completeness',type:'object',fields:[str('assessedNodes','number'),str('coreCompleteNodes','number'),str('pendingFields','number'),str('basis')]}),
+    str('candidateCount', 'number'),
+    defineField({name: 'excludedByTime', type: 'array', of: [{type: 'string'}]}),
+    defineField({name: 'scenario', type: 'object', fields: [str('id'), str('asOfDate', 'date'), str('timeZone')]}),
     defineField({
       name: 'current',
       type: 'object',

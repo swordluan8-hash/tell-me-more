@@ -9,7 +9,8 @@ test("image metadata path seals the byte hash without claiming an image upload",
     "base64",
   );
   await page.goto("/");
-  await page.getByRole("button", { name: "02 物件与访谈" }).click();
+  await page.getByRole("button", { name: "02 历史入口" }).click();
+  await page.getByRole("button", { name: /我有旧物 \/ 旧记录/ }).click();
   await page
     .getByRole("textbox", { name: "物件标题" })
     .fill("演示 · 图片元数据验证");

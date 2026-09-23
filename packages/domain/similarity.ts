@@ -4,18 +4,14 @@ import {
   ref,
   stated,
   type Features,
+  type Answer,
   type HistoricalEvent,
 } from "./model";
 
-// Exact lexical overlap: no embeddings, synonym expansion, inferred values or outcome inputs.
-export function tokens(text: string): string[] {
-  const segments = new Intl.Segmenter("zh", { granularity: "word" }).segment(
-    text.normalize("NFKC").toLowerCase(),
-  );
-  return [
-    ...new Set([...segments].filter((s) => s.isWordLike).map((s) => s.segment)),
-  ].sort();
-}
+export { contentTokens as tokens } from "./lexical";
+import { contentTokens as tokens } from "./lexical";
+export const ALGORITHM_VERSION = "content-overlap-v2";
+
 export function currentFeatures(input: unknown, id: string): Features {
   const v = currentDecision.parse(input);
   // Only direct fields or explicit user labels, never inferred roles, motives or era.
@@ -48,14 +44,17 @@ export function currentFeatures(input: unknown, id: string): Features {
     }),
   ) as Features;
 }
+function supported(a: Answer): boolean {
+  return a.state === "known" && a.provenance.length > 0 &&
+    a.provenance.every((p) => p.strength !== "AI_INFERENCE" && p.quote.trim().length > 0);
+}
 export function compare(features: Features, event: HistoricalEvent) {
   const components = dimensions.map((d) => {
     const a = features[d.key],
       b = event.features[d.key];
     const comparable =
-      a.state === "known" &&
-      b.state === "known" &&
-      !b.provenance.some((p) => p.strength === "AI_INFERENCE");
+      supported(a) && supported(b) &&
+      tokens(a.text).length > 0 && tokens(b.text).length > 0;
     const left = comparable ? tokens(a.text) : [],
       right = comparable ? tokens(b.text) : [];
     const matched = left.filter((t) => right.includes(t));
@@ -85,9 +84,23 @@ export function compare(features: Features, event: HistoricalEvent) {
 export function rank(features: Features, events: HistoricalEvent[]) {
   return events
     .map((e) => compare(features, e))
-    .filter((m) => m.score > 0)
+    .filter(isRelevantMatch)
     .sort(
       (a, b) =>
         b.score - a.score || a.eventRef._ref.localeCompare(b.eventRef._ref),
     );
+}
+
+// An information-source, a generic deadline, or a shared tool alone does not make
+// two decisions analogous. At least a recorded subject, goal or option must match.
+export function isRelevantMatch(m: ReturnType<typeof compare>): boolean {
+  return m.score > 0 && m.components.some((c) =>
+    ["domain", "goal", "options"].includes(c.key) && c.matched.length > 0,
+  );
+}
+export function matchBasis(m: { components: { key: string; matched: string[] }[] }): string {
+  const structural = m.components.filter((c) =>
+    ["domain", "goal", "constraints", "options", "role"].includes(c.key) && c.matched.length > 0,
+  );
+  return structural.length >= 2 ? "多项字段有共同原词" : "单项话题线索，条件尚不足";
 }

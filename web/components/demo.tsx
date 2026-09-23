@@ -1,5 +1,10 @@
 "use client";
 import Link from "next/link";
+import Timeline from "./timeline";
+import GapReview from "./gap-review";
+import { auditEvent, effectiveEvent, eventsAtSession, recordStatus } from "../../packages/domain/completeness";
+import { matchBasis } from "../../packages/domain/similarity";
+import { localDate, localTimestamp, recallViewDate, type ScenarioContext } from "../../packages/domain/temporal";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   dimensions,
@@ -26,16 +31,19 @@ type Page =
   | "interview"
   | "archive"
   | "empower"
-  | "timeline";
+  | "timeline"
+  | "gaps";
 type Draft = { state: Answer["state"]; text: string };
 type Artifact = Extract<ArchiveDocument, { _type: "artifact" }>;
 type Session = Extract<ArchiveDocument, { _type: "empowermentSession" }>;
+type EntryMode = "choose" | "object" | "reconstruct";
 const navigation: [Page, string, string][] = [
   ["welcome", "起点", "01"],
-  ["artifact", "物件与访谈", "02"],
+  ["artifact", "历史入口", "02"],
   ["archive", "历史档案", "03"],
   ["empower", "赋能", "04"],
   ["timeline", "认知轨迹", "05"],
+  ["gaps", "补缺访谈", "06"],
 ];
 async function api(action: string, payload: unknown) {
   const r = await fetch("/api/archive", {
@@ -50,7 +58,7 @@ async function api(action: string, payload: unknown) {
 function Source({ answer }: { answer: Answer }) {
   return (
     <span className="source">
-      {answer.state !== "known" && <b>{unknownLabels[answer.state]} · </b>}
+      {recordStatus(answer) === "pending" ? <b>尚未提供 · </b> : answer.state !== "known" && <b>{unknownLabels[answer.state]} · </b>}
       {answer.provenance.map((p, i) => (
         <span key={i}>
           {p.strength} · {p.sourceRef._ref.slice(0, 18)} / {p.sourceField}
@@ -109,6 +117,8 @@ export default function Demo() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [choices, setChoices] = useState<number[]>(Array(10).fill(-1));
+  const [scenario, setScenario] = useState<ScenarioContext | null>(null);
+  const [entryMode, setEntryMode] = useState<EntryMode>("choose");
   const [artifact, setArtifact] = useState<Artifact | null>(null),
     [artifactConfirmed, setArtifactConfirmed] = useState(false),
     [narration, setNarration] = useState(""),
@@ -151,6 +161,7 @@ export default function Demo() {
     if (!r.ok) throw new Error(data.error);
     setDocuments(data.documents);
     setMode(data.mode);
+    setScenario(data.scenario || null);
   }
   useEffect(() => {
     refresh(personal).catch((e) =>
@@ -170,6 +181,7 @@ export default function Demo() {
     }
   }
   function navigate(p: Page) {
+    if (p === "artifact") setEntryMode("choose");
     setPage(p);
     setError("");
     setNotice("");
@@ -229,11 +241,49 @@ export default function Demo() {
       await refresh();
     });
   }
+  async function saveReconstructionAnchor(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    await run(async () => {
+      const topic = String(form.get("topic") || "").trim();
+      const anchor = String(form.get("anchor") || "").trim();
+      const period = String(form.get("period") || "").trim();
+      if (!topic || !anchor) throw new Error("请先写下一个真实发生过的人生锚点。");
+      const demo = !personal;
+      if (demo && form.get("synthetic") !== "on")
+        throw new Error(
+          "公开演示库只能写入明确标记的虚构资料。真实回忆请切换到本地个人档案。",
+        );
+      const originalText = period
+        ? anchor + "\n\n大概时间（用户当下回忆）：" + period
+        : anchor;
+      const result = await api("artifact", {
+        title: topic,
+        kind: "memory_anchor",
+        originalText,
+        originalDate: null,
+        demo,
+      });
+      setArtifact(result.document);
+      setArtifactConfirmed(true);
+      setNarration("");
+      setFields({});
+      setTitle(topic);
+      setEventDate("");
+      setChosenAction({ state: "known", text: "" });
+      setHistoricalBest({ state: "known", text: "" });
+      setInterviewStage("narration");
+      setPage("interview");
+      await refresh();
+    });
+  }
   async function seal() {
     await run(async () => {
-      if (!artifact) throw new Error("缺少物件");
+      if (!artifact) throw new Error("缺少历史入口");
       const result = await api("seal", {
         artifactId: artifact._id,
+        sourceKind:
+          artifact.kind === "memory_anchor" ? "memory_anchor" : "object_record",
         title,
         narration,
         fields,
@@ -254,6 +304,8 @@ export default function Demo() {
       setArtifact(null);
     });
   }
+  const latestSession = documents.filter((d): d is Session => d._type === "empowermentSession")
+    .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))[0];
   const selectedEvent = events.find((e) => e._id === selected) || events[0];
   return (
     <div className="shell">
@@ -310,6 +362,8 @@ export default function Demo() {
             onClick={() => {
               setPersonal(!personal);
               setSession(null);
+              setScenario(null);
+              setResultEvents([]);
               setPage("welcome");
             }}
           >
@@ -330,6 +384,11 @@ export default function Demo() {
                 : "全部示例均为虚构，非你的真实经历"}
             </span>
           </div>
+          {scenario && personal && (
+            <div className="alert" data-testid="scenario-banner">
+              管理员时间场景：{scenario.asOfDate} · T0 不变。实际采集时间单独显示，基线以后的内容不进入本轮历史匹配。
+            </div>
+          )}
           {error && (
             <div className="alert error" role="alert">
               {error}
@@ -351,7 +410,7 @@ export default function Demo() {
                     <em>选择属于你。</em>
                   </h1>
                   <p className="lead">
-                    从一件物件、一段经历开始。
+                    有旧物，从证据开始；没有旧物，也能从人生时间线开始。
                     <br />
                     还原当时知道什么、为什么选择，
                     <br />
@@ -402,9 +461,9 @@ export default function Demo() {
               </section>
               <section className="steps-grid">
                 <article>
-                  <span>01 / 留下证据</span>
-                  <h3>从真实物件出发</h3>
-                  <p>原件立即封存。你的回忆与系统整理，分别保存。</p>
+                  <span>01 / 找到入口</span>
+                  <h3>旧物或人生锚点，都可以</h3>
+                  <p>有原件就封存原件；没有旧物，就从你确认发生过的地点、搬家、工作或关系变化开始。</p>
                 </article>
                 <article>
                   <span>02 / 还原当时</span>
@@ -418,7 +477,7 @@ export default function Demo() {
                 </article>
               </section>
               <div className="section-heading">
-                <h2>已封存的演示片段</h2>
+                <h2>{personal ? "已保存的个人历史" : "已封存的演示片段"}</h2>
                 <button
                   className="text-button"
                   onClick={() => navigate("archive")}
@@ -516,55 +575,174 @@ export default function Demo() {
           )}
           {page === "artifact" && (
             <>
-              <PageTitle
-                kicker="01 · EVIDENCE FIRST"
-                title="一件物件，一段过去。"
-                text="文字原件立即保存并生成 SHA-256。图片 Demo 保存元数据与内容哈希，原图仍由你保管；不进行 OCR 或内容猜测。"
-              />
-              <form className="panel form-panel" onSubmit={saveArtifact}>
-                <label className="field">
-                  物件标题
-                  <input
-                    name="title"
-                    required
-                    placeholder="例如：那封关于合作的邮件"
+              {entryMode === "choose" && (
+                <>
+                  <PageTitle
+                    kicker="02 · TWO WAYS INTO YOUR HISTORY"
+                    title="你的过去，不一定留在旧物里。"
+                    text="有人保存旧照片、邮件和纪念品；也有人习惯断舍离。两种生活方式都能进入叙能，只是证据强度不同。"
                   />
-                </label>
-                <div className="two-cols">
-                  <label className="field">
-                    物件类型
-                    <select name="kind">
-                      <option value="text">文字原件</option>
-                      <option value="image_metadata">图片元数据</option>
-                    </select>
-                  </label>
-                  <label className="field">
-                    物件原始日期（可未知）
-                    <input type="date" name="date" />
-                  </label>
-                </div>
-                <label className="field">
-                  原始文字
-                  <textarea
-                    name="text"
-                    rows={7}
-                    placeholder="原样粘贴。保存后不再修改。"
+                  <div className="entry-paths">
+                    <button
+                      className="entry-card"
+                      onClick={() => setEntryMode("object")}
+                    >
+                      <span className="path-no">A</span>
+                      <div>
+                        <p className="eyebrow">I HAVE SOMETHING</p>
+                        <h2>我有旧物 / 旧记录</h2>
+                        <p>
+                          从照片、邮件、文档、聊天记录、视频或其他真实记录开始。原件与后来的回忆分开保存。
+                        </p>
+                        <b>从真实证据开始 →</b>
+                      </div>
+                    </button>
+                    <button
+                      className="entry-card"
+                      onClick={() => setEntryMode("reconstruct")}
+                    >
+                      <span className="path-no">B</span>
+                      <div>
+                        <p className="eyebrow">I KEPT NOTHING</p>
+                        <h2>我没有旧物</h2>
+                        <p>
+                          从一座城市、一次搬家、一份工作、一个项目或一段关系开始。年份可以模糊，不记得就明确保留未知。
+                        </p>
+                        <b>从人生时间线回溯 →</b>
+                      </div>
+                    </button>
+                  </div>
+                  <div className="principle-note">
+                    <b>两条路不混淆证据。</b>
+                    <span>
+                      旧物属于当时留下的记录；回溯锚点属于你今天对过去的回忆。系统分别标记来源，不把回忆伪装成当时证据。
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {entryMode === "object" && (
+                <>
+                  <PageTitle
+                    kicker="02A · EVIDENCE FIRST"
+                    title="一件物件，一段过去。"
+                    text="文字原件立即保存并生成 SHA-256。图片 Demo 保存元数据与内容哈希，原图仍由你保管；不进行 OCR 或内容猜测。"
                   />
-                </label>
-                <label className="field">
-                  图片（仅图片路径、元数据和哈希）
-                  <input type="file" name="image" accept="image/*" />
-                </label>
-                {!personal && (
-                  <label className="check">
-                    <input name="synthetic" type="checkbox" required />
-                    我确认这是虚构演示资料，可写入公开演示库。
-                  </label>
-                )}
-                <button className="primary" disabled={busy}>
-                  保存原件并立即封存 →
-                </button>
-              </form>
+                  <button
+                    className="back-link"
+                    onClick={() => setEntryMode("choose")}
+                  >
+                    ← 返回两种入口
+                  </button>
+                  <form className="panel form-panel" onSubmit={saveArtifact}>
+                    <label className="field">
+                      物件标题
+                      <input
+                        name="title"
+                        required
+                        placeholder="例如：那封关于合作的邮件"
+                      />
+                    </label>
+                    <div className="two-cols">
+                      <label className="field">
+                        物件类型
+                        <select name="kind">
+                          <option value="text">文字原件</option>
+                          <option value="image_metadata">图片元数据</option>
+                        </select>
+                      </label>
+                      <label className="field">
+                        物件原始日期（可未知）
+                        <input type="date" name="date" />
+                      </label>
+                    </div>
+                    <label className="field">
+                      原始文字
+                      <textarea
+                        name="text"
+                        rows={7}
+                        placeholder="原样粘贴。保存后不再修改。"
+                      />
+                    </label>
+                    <label className="field">
+                      图片（仅图片路径、元数据和哈希）
+                      <input type="file" name="image" accept="image/*" />
+                    </label>
+                    {!personal && (
+                      <label className="check">
+                        <input name="synthetic" type="checkbox" required />
+                        我确认这是虚构演示资料，可写入公开演示库。
+                      </label>
+                    )}
+                    <button className="primary" disabled={busy}>
+                      保存原件并立即封存 →
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {entryMode === "reconstruct" && (
+                <>
+                  <PageTitle
+                    kicker="02B · RECONSTRUCTION MODE"
+                    title="没有旧物，就从你记得的真实人生开始。"
+                    text="先建立一个回溯锚点。它不是“当时证据”，而是你今天明确提供的回忆起点；时间可以只写到大概范围。"
+                  />
+                  <button
+                    className="back-link"
+                    onClick={() => setEntryMode("choose")}
+                  >
+                    ← 返回两种入口
+                  </button>
+                  <form
+                    className="panel form-panel reconstruction-form"
+                    onSubmit={saveReconstructionAnchor}
+                  >
+                    <label className="field">
+                      这条人生线从哪里开始？
+                      <input
+                        name="topic"
+                        required
+                        placeholder="例如：我在上海的几次搬家"
+                      />
+                    </label>
+                    <label className="field">
+                      你现在确定发生过的第一件事
+                      <textarea
+                        name="anchor"
+                        required
+                        rows={6}
+                        placeholder="例如：我到上海以后搬过很多次家。每次搬家，我都会把旧东西清掉。"
+                      />
+                    </label>
+                    <label className="field">
+                      大概时间（可完全不知道）
+                      <input
+                        name="period"
+                        placeholder="例如：2010年前后 / 到上海后的前几年 / 不记得"
+                      />
+                    </label>
+                    <div className="anchor-examples">
+                      <span>还可以从这些真实锚点开始：</span>
+                      <b>第一次到一座城市</b>
+                      <b>一次搬家</b>
+                      <b>一份工作开始或结束</b>
+                      <b>一个项目</b>
+                      <b>一次旅行</b>
+                      <b>一段关系变化</b>
+                    </div>
+                    {!personal && (
+                      <label className="check">
+                        <input name="synthetic" type="checkbox" required />
+                        我确认这只是虚构演示锚点。真实经历请切换到本地个人档案。
+                      </label>
+                    )}
+                    <button className="primary" disabled={busy}>
+                      封存回溯锚点，开始访谈 →
+                    </button>
+                  </form>
+                </>
+              )}
             </>
           )}
           {page === "interview" && artifact && (
@@ -572,16 +750,24 @@ export default function Demo() {
               <PageTitle
                 kicker="02 · RECALL IN YOUR OWN WORDS"
                 title="慢慢说，我只记录。"
-                text="不判断、不补全、不改写。原件、回忆与分类索引分别保存。"
+                text={
+                  artifact.kind === "memory_anchor"
+                    ? "不判断、不补全、不改写。回溯锚点只代表你今天的回忆，之后找到的新证据可以再关联进来。"
+                    : "不判断、不补全、不改写。原件、回忆与分类索引分别保存。"
+                }
               />
               <div className="interview-layout">
                 <aside className="evidence-panel">
-                  <span className="pill">原件已封存</span>
+                  <span className="pill">
+                    {artifact.kind === "memory_anchor"
+                      ? "回溯锚点 · LATER RECALL"
+                      : "原件已封存"}
+                  </span>
                   <h3>{artifact.title}</h3>
                   <pre>
-                    {artifact.kind === "text"
-                      ? artifact.originalText
-                      : JSON.stringify(artifact.fileMetadata, null, 2)}
+                    {artifact.kind === "image_metadata"
+                      ? JSON.stringify(artifact.fileMetadata, null, 2)
+                      : artifact.originalText}
                   </pre>
                   <p className="source">SHA-256 {artifact.sha256}</p>
                   <p className="source">{artifact._id}</p>
@@ -799,6 +985,7 @@ export default function Demo() {
                 </div>
                 {selectedEvent ? (
                   <EventDetail
+                    scenario={scenario}
                     event={selectedEvent}
                     documents={documents}
                     onAppend={(verbatim) =>
@@ -873,6 +1060,13 @@ export default function Demo() {
                     <button className="primary" disabled={busy}>
                       {busy ? "正在查阅历史…" : "调用相似历史 ↗"}
                     </button>
+                    {latestSession && (
+                      <button type="button" className="text-button" onClick={() => {
+                        setSession(latestSession);
+                        setCurrent(latestSession.current);
+                        setResultEvents(eventsAtSession(documents, latestSession, scenario));
+                      }}>查看最近一次结果</button>
+                    )}
                     {!personal && (
                       <button
                         type="button"
@@ -888,8 +1082,7 @@ export default function Demo() {
                   <span className="eyebrow">透明的比较依据</span>
                   <h3>不只给一个百分比。</h3>
                   <p>
-                    按原文分词，比较词汇交集 /
-                    并集。直接比较事件、紧迫条件与选项。其余维度只有在你明确写出「角色：…；目标：…；信息：…；关系：…；技术：…」时才参与；没有说明就保留未知。
+                    去除口语虚词，保留完整关键词，按同一字段比较原词交集与并集。至少事件主题、目标或选项有共同原词才列为候选；仅使用同一平台不算相似决策。其余维度只使用明确提供的内容。
                   </p>
                   {dimensions.map((d) => (
                     <div className="weight" key={d.key}>
@@ -898,17 +1091,29 @@ export default function Demo() {
                     </div>
                   ))}
                   <small>
-                    缺失字段计 0 分，并降低可比信息量。分数不是未来结果的概率。
+                    共同词只说明话题有关，不代表选择、立场或条件相同。缺失字段不补值；词汇分不是成功率，也不代表已完成语义理解。
                   </small>
                 </div>
               </div>
               {session && (
                 <section className="results" aria-live="polite">
                   <div className="section-heading">
-                    <h2>找到 {session.matches.length} 段有共同依据的历史</h2>
+                    <h2>找到 {session.matches.length} 条有内容依据的历史候选</h2>
                     <span className="pill">{session.retrievalMode}</span>
                   </div>
                   <div className="alert">{session.retrievalNotice}</div>
+                  <p className="muted" data-testid="matching-method">
+                    规则：{session.algorithmVersion || "旧版规则（结果保留，未重算）"}。
+                    {session.candidateCount !== undefined && ` 从 ${session.candidateCount} 条历史节点中筛选；未命中的历史仍保留在档案。`}
+                    当前只验证内容词与字段匹配，不把节点数当作独立人生次数。
+                  </p>
+                  {session.matches.length === 0 && <div className="panel">现有明确字段没有找到足够的共同内容，不凑数、不强行给结论。</div>}
+
+                  {session.completeness && <div className="alert" data-testid="empower-completeness">
+                    {session.completeness.assessedNodes} 个节点已检查，{session.completeness.coreCompleteNodes} 个核心字段记录完整。
+                    以下候选只能使用已记录部分；未完成访谈不等于完整决策证据。
+                    <button type="button" className="text-button" onClick={()=>navigate("gaps")}>进入补缺访谈</button>
+                  </div>}
                   {session.matches.map((m, i) => {
                     const e = resultEvents.find(
                       (e) => e._id === m.eventRef._ref,
@@ -918,14 +1123,16 @@ export default function Demo() {
                         <div className="match-heading">
                           <div>
                             <span className="eyebrow">
-                              REFERENCE 0{i + 1} · {e.eventStartDate} ·{" "}
+                              REFERENCE {String(i + 1).padStart(2, "0")} · {e.eventStartDate || "日期待补"} ·{" "}
                               {e.demo ? "虚构演示" : "个人历史"}
                             </span>
                             <h2>{e.title}</h2>
+                            <span className="pill">{matchBasis(m)}</span>
+                            <p className="source">{auditEvent(e, [], scenario).coreComplete ? "核心字段已有记录；不代表事实全部已知。" : "访谈仍有缺口，只供部分参照。"}</p>
                           </div>
                           <div className="match-number">
                             {m.score}
-                            <small>加权分 / 100</small>
+                            <small>原词加权分 / 100</small>
                           </div>
                         </div>
                         <div className="time-layers">
@@ -936,12 +1143,13 @@ export default function Demo() {
                             <small>实际结果：{e.fields.outcome.text}</small>
                           </div>
                           <div>
-                            <span>访谈当时 · {e.recordedAt.slice(0, 10)}</span>
+                            <span>回忆视角 · {recallViewDate(e._id, e.recordedAt, scenario)}</span>
+                            <small>实际采集：{localTimestamp(e.recordedAt, scenario?.timeZone)}</small>
                             <p>{e.fields.reflection.text}</p>
                             <small>用户评价：{e.fields.evaluation.text}</small>
                           </div>
                           <div>
-                            <span>当前时刻</span>
+                            <span>当前问题 · {session.scenario?.asOfDate || localDate(session.recordedAt)}{session.scenario ? "（管理员时间测试）" : ""}</span>
                             <p>{session.current.happened}</p>
                             <small>可比信息权重：{m.coverage} / 100</small>
                           </div>
@@ -956,7 +1164,7 @@ export default function Demo() {
                                   <th>共同词</th>
                                   <th>当前独有 / 历史独有</th>
                                   <th>分项</th>
-                                  <th>来源</th>
+                                  <th>当前与历史原句 / 来源</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -977,6 +1185,10 @@ export default function Demo() {
                                     </td>
                                     <td>{c.earned.toFixed(2)}</td>
                                     <td className="source">
+                                      <b>当前原句：</b>{session.currentFeatures[c.key as keyof typeof session.currentFeatures]?.text}
+                                      <hr />
+                                      <b>历史原句：</b>{e.features[c.key as keyof typeof e.features]?.text}
+                                      <hr />
                                       {c.currentSource}
                                       <br />
                                       {c.eventRef._ref}
@@ -1008,7 +1220,11 @@ export default function Demo() {
               )}
             </>
           )}
-          {page === "timeline" && <Timeline documents={documents} />}
+          {page === "timeline" && <Timeline documents={documents} scenario={scenario} />}
+          {page === "gaps" && <GapReview documents={documents} scenario={scenario} onSave={async(payload)=>{
+            await api("fill-gap", payload); await refresh();
+          }}/>}
+
         </main>
         <footer>
           叙能 / TELL ME MORE <span>忠实记录 · 保留未知 · 选择自主</span>
@@ -1036,14 +1252,18 @@ function PageTitle({
   );
 }
 function EventDetail({
-  event,
+  event: storedEvent,
   documents,
   onAppend,
+  scenario,
 }: {
   event: HistoricalEvent;
+  scenario: ScenarioContext | null;
   documents: ArchiveDocument[];
   onAppend: (text: string) => Promise<void>;
 }) {
+  const event = effectiveEvent(storedEvent, documents, scenario);
+  const completeness = auditEvent(storedEvent, documents, scenario);
   const [recall, setRecall] = useState("");
   const artifacts = documents.filter(
     (d): d is Artifact =>
@@ -1061,14 +1281,16 @@ function EventDetail({
         SEALED · {event.demo ? "虚构演示" : "个人记录"}
       </span>
       <h2>{event.title}</h2>
+      <p className="source">{completeness.coreComplete ? "核心字段已记录" : "资料已保存，访谈仍需补缺"} · 下列分类视图包含有来源的追加补充，原档未被改写。</p>
       <p className="source">
-        事件时间 {event.eventStartDate || "未知"} · 回忆记录 {event.recordedAt}
+        事件时间 {event.eventStartDate || "日期待补"} · 回忆视角 {recallViewDate(event._id, event.recordedAt, scenario)}
+        <br />实际采集 {localTimestamp(event.recordedAt, scenario?.timeZone)}
         <br />
         来源 ID {event._id}
       </p>
       <section>
         <h3>
-          <span>01</span> 原始证据层
+          <span>01</span> 原始载体层 · 口述记录不冒充历史实物
         </h3>
         {artifacts.map((a) => (
           <div key={a._id}>
@@ -1090,7 +1312,8 @@ function EventDetail({
         {memories.map((m) => (
           <details key={m._id} open>
             <summary>
-              {m.recordedAt.slice(0, 10)} · 用户原话 · {m._id.slice(0, 20)}
+              回忆视角 {m.collectionContext ? `${m.collectionContext.viewpointDate}（测试视角）` : recallViewDate(m._id, m.recordedAt, scenario)} · 用户原话
+              · 实际采集 {localTimestamp(m.recordedAt, scenario?.timeZone)}
             </summary>
             <pre>{m.verbatim}</pre>
           </details>
@@ -1141,88 +1364,5 @@ function EventDetail({
         <button className="secondary">追加新回忆</button>
       </form>
     </article>
-  );
-}
-function Timeline({ documents }: { documents: ArchiveDocument[] }) {
-  const planes = documents
-    .filter(
-      (d): d is Extract<ArchiveDocument, { _type: "cognitionPlane" }> =>
-        d._type === "cognitionPlane",
-    )
-    .sort((a, b) => a.periodStart.localeCompare(b.periodStart));
-  const t0 = planes.filter((p) => p.anchorType === "T0").at(-1);
-  const past = planes.find((p) => p.anchorType === "reconstructed_past");
-  return (
-    <>
-      <PageTitle
-        kicker="05 · COGNITION THROUGH TIME"
-        title="看见差异，不评判高低。"
-        text="T0 是注册锚点。历史平面来自具体事件的重建，只呈现记录差异与证据，不输出成长评分。"
-      />
-      <div className="timeline">
-        {planes.map((p) => (
-          <article className="timeline-item" key={p._id}>
-            <span className="timeline-dot" />
-            <small>
-              {p.periodStart}{" "}
-              {p.periodEnd !== p.periodStart ? `— ${p.periodEnd}` : ""}
-            </small>
-            <h2>{p.title}</h2>
-            <span className="pill">
-              {p.anchorType} · {p.demo ? "虚构演示" : "个人记录"}
-            </span>
-            <p className="source">
-              {p.sourceProvenance
-                .map((s) => `${s.sourceRef._ref} / ${s.strength}`)
-                .join(" · ")}
-            </p>
-          </article>
-        ))}
-      </div>
-      {past && t0 ? (
-        <div className="panel">
-          <h2>历史切片 ↔ T0 · 有据可查的差异</h2>
-          <p>
-            这些是不同时间与问题下的原话，不构成改善、退步或因果判断。未记录的维度不推断。
-          </p>
-          {Object.keys(past.fields)
-            .filter((k) => {
-              const key = k as keyof typeof past.fields;
-              return (
-                past.fields[key].state === "known" &&
-                t0.fields[key].state === "known" &&
-                past.fields[key].text !== t0.fields[key].text
-              );
-            })
-            .map((k) => {
-              const key = k as keyof typeof past.fields;
-              return (
-                <div className="plane-diff" key={key}>
-                  <h3>{key}</h3>
-                  <div>
-                    <span>{past.periodStart}</span>
-                    <p>{past.fields[key].text}</p>
-                    <Source answer={past.fields[key]} />
-                  </div>
-                  <div>
-                    <span>T0 · {t0.periodStart}</span>
-                    <p>{t0.fields[key].text}</p>
-                    <Source answer={t0.fields[key]} />
-                  </div>
-                </div>
-              );
-            })}
-          <details>
-            <summary>保留的未知维度（不评分）</summary>
-            <p>{past.unknownFields.join(" · ")}</p>
-          </details>
-        </div>
-      ) : (
-        <div className="panel">
-          尚无可比较的两个认知平面。演示档案包含一个 T0
-          与一个历史平面；个人平面不会混用演示证据。
-        </div>
-      )}
-    </>
   );
 }

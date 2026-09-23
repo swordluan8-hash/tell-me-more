@@ -11,3 +11,4 @@ playwright-report/
 .DS_Store
 .serena/
 sanity/claim-project.html
+.data/e2e-archive.json

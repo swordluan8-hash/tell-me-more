@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { localDate } from "./temporal";
 import {
   interviewFields,
   planeFields,
@@ -38,6 +39,7 @@ export const draftFields = z.object(
 );
 export const sealRequest = z.object({
   artifactId: z.string().min(1),
+  sourceKind: z.enum(["object_record", "memory_anchor"]).default("object_record"),
   title: z.string().min(1).max(200),
   narration: z.string().min(1).max(30000),
   fields: draftFields,
@@ -216,8 +218,10 @@ export function createEvent(
       evidence(
         v.artifactId,
         "originalText",
-        "访谈物件锚点",
-        "CONTEMPORARY_RECORD",
+        v.sourceKind === "memory_anchor" ? "用户回溯锚点" : "访谈物件锚点",
+        v.sourceKind === "memory_anchor"
+          ? "LATER_RECALL"
+          : "CONTEMPORARY_RECORD",
         now,
       ),
     ],
@@ -231,7 +235,7 @@ export function createBaseline(
 ): ArchiveDocument[] {
   z.array(z.number().int().min(0).max(2)).length(10).parse(choices);
   const now = new Date().toISOString(),
-    date = now.slice(0, 10);
+    date = localDate(now);
   const answers = choices.map((c, i) => ({
     question: i,
     choice: c,

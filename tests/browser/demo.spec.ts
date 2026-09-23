@@ -12,7 +12,8 @@ test("full synthetic evidence → recall → seal → retrieve → timeline loop
   await expect(
     page.getByRole("heading", { name: "看见差异，不评判高低。" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "02 物件与访谈" }).click();
+  await page.getByRole("button", { name: "02 历史入口" }).click();
+  await page.getByRole("button", { name: /我有旧物 \/ 旧记录/ }).click();
   await page
     .getByRole("textbox", { name: "物件标题" })
     .fill("演示 · 浏览器验证合作记录");
@@ -111,4 +112,33 @@ test("mobile home is usable without horizontal overflow", async ({ page }) => {
     path: "test-results/home-mobile.png",
     fullPage: true,
   });
+});
+
+
+test("no-object reconstruction route preserves later-recall provenance", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "02 历史入口" }).click();
+  await expect(page.getByRole("button", { name: /我有旧物 \/ 旧记录/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /我没有旧物/ })).toBeVisible();
+
+  await page.getByRole("button", { name: /我没有旧物/ }).click();
+  await page
+    .getByRole("textbox", { name: "这条人生线从哪里开始？" })
+    .fill("演示 · 在上海的几次搬家");
+  await page
+    .getByRole("textbox", { name: "你现在确定发生过的第一件事" })
+    .fill("我到上海以后搬过很多次家，每次搬家都会清掉旧东西。");
+  await page
+    .getByRole("textbox", { name: "大概时间（可完全不知道）" })
+    .fill("到上海后的前几年");
+  await page.getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "封存回溯锚点，开始访谈" })
+    .click();
+
+  await expect(page.getByText("回溯锚点 · LATER RECALL", { exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "自由叙述" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "识别准确，开始叙述" }),
+  ).toHaveCount(0);
 });

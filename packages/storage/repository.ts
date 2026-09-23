@@ -32,7 +32,9 @@ function keys(value: unknown): unknown {
 export class LocalRepository implements ArchiveRepository {
   private queue: Promise<void> = Promise.resolve();
   constructor(
-    private file = path.join(rootDir(), ".data", "archive.json"),
+    private file = process.env.TMM_LOCAL_ARCHIVE_PATH
+      ? path.resolve(rootDir(), process.env.TMM_LOCAL_ARCHIVE_PATH)
+      : path.join(rootDir(), ".data", "archive.json"),
     private initial: ArchiveDocument[] = demoDocuments(),
   ) {}
   async all() {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { dimensions, interviewFields, planeFields } from "./catalog";
+import { gapFieldKeys } from "./gap-catalog";
 
 export const reference = z.object({
   _type: z.literal("reference"),
@@ -57,7 +58,7 @@ export const artifact = z.object({
   ...common,
   _type: z.literal("artifact"),
   title: z.string().min(1).max(200),
-  kind: z.enum(["text", "image_metadata"]),
+  kind: z.enum(["text", "image_metadata", "memory_anchor"]),
   originalText: z.string(),
   originalDate: answer,
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
@@ -71,10 +72,18 @@ export const artifact = z.object({
     })
     .optional(),
 });
+export const fieldSupplement = z.object({
+  eventRef: reference,
+  decisionId: z.string().min(1),
+  field: z.enum(gapFieldKeys),
+  answer,
+});
 export const memoryStatement = z.object({
   ...common,
   _type: z.literal("memoryStatement"),
   verbatim: z.string().min(1),
+  supplements: z.array(fieldSupplement).optional(),
+  collectionContext: z.object({ scenarioId: z.string(), viewpointDate: z.iso.date() }).optional(),
   artifactRefs: z.array(reference),
   eventRefs: z.array(reference),
   classifications: z.array(
@@ -195,6 +204,17 @@ export const match = z.object({
 export const empowermentSession = z.object({
   ...common,
   _type: z.literal("empowermentSession"),
+  algorithmVersion: z.string().optional(),
+  sourceRevisionRefs: z.array(reference).optional(),
+  completeness: z.object({
+    assessedNodes: z.number().int().nonnegative(),
+    coreCompleteNodes: z.number().int().nonnegative(),
+    pendingFields: z.number().int().nonnegative(),
+    basis: z.literal("field-presence-and-provenance-not-semantic-accuracy"),
+  }).optional(),
+  candidateCount: z.number().int().nonnegative().optional(),
+  excludedByTime: z.array(z.string()).optional(),
+  scenario: z.object({ id: z.string(), asOfDate: z.iso.date(), timeZone: z.string() }).optional(),
   current: currentDecision,
   currentFeatures: featureAnswers,
   retrievalMode: z.enum(["context", "sanity-groq", "local-demo"]),
