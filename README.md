@@ -92,7 +92,7 @@ The Archive page includes a **Full Verbatim Corpus** for all 54 saved memory sta
 The fixed public Empower question comes from the owner's real May 28 session. The live result is currently:
 
 - `retrievalMode = context`
-- 23 historical candidates available through the real Knowledge Base
+- 18 historical candidates returned by the current real Knowledge Base / Context retrieval
 - 4 structured matches retained for the current decision
 
 ![Real-history home](docs/screenshots/real-history-home.png)
@@ -127,7 +127,7 @@ The local product UI is Chinese. Judge mode uses English-first bilingual guidanc
 3. Scroll to **Full Verbatim Corpus** and open any of the 54 saved `memoryStatement` records to see the exact recorded words.
 4. Compare the verbatim layer with the structured event/classification layer; the system does not present classifications as if they were original quotes.
 5. Open **Empower**. The fixed public decision is the owner's real May 28 decision after ending roughly a decade of ride-hailing.
-6. Run the live Context query. The current verified path reports `retrievalMode = context`, 23 available historical candidates, and 4 retained structured matches.
+6. Run the live Context query. The current verified path reports `retrievalMode = context`, 18 current Context candidates, and 4 retained structured matches.
 7. Read **Personal History Basis**: past choice, reason, actual outcome, later evaluation when recorded, and source event ID.
 8. Expand a match to inspect field-level similarities, differences, weights, and provenance.
 9. **Cognition Timeline** remains descriptive; it does not generate a growth score.
