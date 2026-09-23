@@ -66,13 +66,14 @@ export class LocalRepository implements ArchiveRepository {
     await work;
   }
 }
-export function sanityClient() {
+export function sanityClient(write = false) {
   const c = serverConfig();
-  if (!c.projectId || !c.token) throw new Error("SANITY_NOT_CONFIGURED");
+  if (!c.projectId) throw new Error("SANITY_NOT_CONFIGURED");
+  if (write && !c.token) throw new Error("SANITY_WRITE_NOT_CONFIGURED");
   return createClient({
     projectId: c.projectId,
     dataset: c.dataset,
-    token: c.token,
+    token: c.token || undefined,
     apiVersion: "2026-09-01",
     useCdn: false,
     perspective: "published",
@@ -81,7 +82,7 @@ export function sanityClient() {
 }
 export class SanityRepository implements ArchiveRepository {
   async all() {
-    const docs = await sanityClient().fetch(
+    const docs = await sanityClient(false).fetch(
       '*[userId == "single-user" && status == "sealed" && !(_id in path("drafts.**"))]',
     );
     return validateBatch(docs);
@@ -93,7 +94,7 @@ export class SanityRepository implements ArchiveRepository {
       throw new Error(
         "PUBLIC_DEMO_DATASET: personal history is local-only until a private dataset is configured.",
       );
-    let tx = sanityClient().transaction();
+    let tx = sanityClient(true).transaction();
     for (const d of docs)
       tx = tx.create(
         keys(d) as { _id: string; _type: string; [key: string]: unknown },

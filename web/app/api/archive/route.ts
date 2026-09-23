@@ -2,6 +2,8 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { getArchive, perform } from "../../../../packages/application/service";
 import { ZodError } from "zod";
+import { serverConfig } from "../../../../packages/storage/config";
+import { exampleDecision } from "../../../../packages/domain/catalog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 function local(req: NextRequest) {
@@ -9,11 +11,16 @@ function local(req: NextRequest) {
   return host === "localhost" || host === "127.0.0.1";
 }
 export async function GET(req: NextRequest) {
-  if (!local(req))
-    return NextResponse.json({ error: "LOCAL_ONLY" }, { status: 403 });
+  const publicDemo = serverConfig().publicDemo;
+  const wantsPersonal = req.nextUrl.searchParams.get("personal") === "true";
+  if ((!local(req) && !publicDemo) || (publicDemo && wantsPersonal))
+    return NextResponse.json(
+      { error: publicDemo ? "PUBLIC_DEMO_ONLY" : "LOCAL_ONLY" },
+      { status: 403 },
+    );
   try {
     return NextResponse.json(
-      await getArchive(req.nextUrl.searchParams.get("personal") === "true"),
+      await getArchive(publicDemo ? false : wantsPersonal),
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
@@ -28,12 +35,17 @@ export async function GET(req: NextRequest) {
 }
 export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin");
+  const publicDemo = serverConfig().publicDemo;
   if (
-    !local(req) ||
+    (!local(req) && !publicDemo) ||
     (origin && new URL(origin).host !== req.headers.get("host"))
   )
     return NextResponse.json(
-      { error: "LOCAL_SAME_ORIGIN_ONLY" },
+      {
+        error: publicDemo
+          ? "PUBLIC_DEMO_SAME_ORIGIN_ONLY"
+          : "LOCAL_SAME_ORIGIN_ONLY",
+      },
       { status: 403 },
     );
   if (Number(req.headers.get("content-length") || 0) > 250000)
@@ -43,6 +55,25 @@ export async function POST(req: NextRequest) {
     if (raw.length > 250000)
       return NextResponse.json({ error: "PAYLOAD_TOO_LARGE" }, { status: 413 });
     const { action, payload } = JSON.parse(raw);
+    if (publicDemo) {
+      if (action !== "empower-preview")
+        return NextResponse.json(
+          { error: "PUBLIC_DEMO_READ_ONLY" },
+          { status: 403 },
+        );
+      return NextResponse.json(
+        await perform("empower-preview", {
+          current: exampleDecision,
+          demo: true,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+          },
+        },
+      );
+    }
     return NextResponse.json(await perform(action, payload), { status: 201 });
   } catch (error) {
     return NextResponse.json(

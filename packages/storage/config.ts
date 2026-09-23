@@ -17,14 +17,16 @@ export function serverConfig() {
       if (m) local[m[1]] = m[2].replace(/^['"]|['"]$/g, "");
     }
   const get = (k: string) => process.env[k] || local[k] || "";
+  const publicDemo = get("TMM_PUBLIC_DEMO") === "true";
   return {
     projectId: get("SANITY_PROJECT_ID"),
     dataset: get("SANITY_DATASET") || "production",
-    token: get("SANITY_AUTH_TOKEN"),
+    token: publicDemo ? "" : get("SANITY_AUTH_TOKEN"),
     contextUrl: get("SANITY_CONTEXT_MCP_URL"),
     organizationToken: get("SANITY_ORGANIZATION_TOKEN"),
     knowledgeBaseId: get("SANITY_KNOWLEDGE_BASE_ID"),
     storage: process.env.TMM_STORAGE || "sanity",
     privateDataset: get("TMM_PRIVATE_DATASET") === "true",
+    publicDemo,
   };
 }

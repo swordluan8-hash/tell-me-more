@@ -109,7 +109,7 @@ The initial seed has 12 synthetic documents: 3 artifacts, 3 memories, 3 historic
 events, 2 cognition planes, and 1 baseline. Empower sessions are created on use.
 Demo questionnaire runs may append additional demonstration T0 snapshots.
 
-Current verification: 53 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, and the production dataset remains at exactly 12 canonical documents / 3 historical events after E2E. Browser tests use an isolated gitignored local archive.
+Current verification: 54 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, and the production dataset remains at exactly 12 canonical documents / 3 historical events after E2E. Browser tests use an isolated gitignored local archive.
 
 ## Sanity and Context
 
@@ -159,6 +159,20 @@ References verified on 2026-09-22:
 [provisioning](https://sanity.new),
 [Context setup](https://www.sanity.io/docs/ai/sanity-context-quick-start),
 [Context tool contract](https://www.sanity.io/docs/ai/sanity-context-mcp-tools).
+
+## Public judge deployment mode
+
+Set `TMM_PUBLIC_DEMO=true` for an internet-facing review build. This mode is intentionally narrower than the local product:
+
+- only the 12 synthetic canonical documents are readable;
+- personal-history mode is unavailable;
+- Content Lake write credentials are ignored even if accidentally configured;
+- artifact, T0, seal, recall and gap-write actions are rejected;
+- the public Empower button runs one fixed synthetic decision through the live Sanity Context / Knowledge Base path;
+- the returned `empowermentSession` is not persisted;
+- the public deployment reads the public dataset anonymously while the organization Context token remains server-side.
+
+This keeps the review experience live without turning the contest dataset into a public write API.
 
 ## Local fallback and privacy
 

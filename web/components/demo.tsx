@@ -113,6 +113,7 @@ export default function Demo() {
     [documents, setDocuments] = useState<ArchiveDocument[]>([]),
     [mode, setMode] = useState("读取中"),
     [personal, setPersonal] = useState(false),
+    [publicDemo, setPublicDemo] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
@@ -162,6 +163,11 @@ export default function Demo() {
     setDocuments(data.documents);
     setMode(data.mode);
     setScenario(data.scenario || null);
+    setPublicDemo(Boolean(data.publicDemo));
+    if (data.publicDemo) {
+      setPersonal(false);
+      setCurrent(exampleDecision);
+    }
   }
   useEffect(() => {
     refresh(personal).catch((e) =>
@@ -181,6 +187,15 @@ export default function Demo() {
     }
   }
   function navigate(p: Page) {
+    if (
+      publicDemo &&
+      (p === "baseline" || p === "artifact" || p === "interview" || p === "gaps")
+    ) {
+      setPage("archive");
+      setError("");
+      setNotice("公开评审版为只读：可查看历史、时间线，并运行固定的实时 Context 赋能演示。");
+      return;
+    }
     if (p === "artifact") setEntryMode("choose");
     setPage(p);
     setError("");
@@ -327,7 +342,12 @@ export default function Demo() {
           在重要时刻出现。
         </p>
         <nav aria-label="主导航">
-          {navigation.map(([id, label, n]) => (
+          {navigation
+            .filter(
+              ([id]) =>
+                !publicDemo || (id !== "artifact" && id !== "gaps"),
+            )
+            .map(([id, label, n]) => (
             <button
               key={id}
               className={
@@ -346,7 +366,8 @@ export default function Demo() {
           ))}
         </nav>
         <div className="side-bottom">
-          <span className="status-dot" /> 单用户 · 本地 Demo
+          <span className="status-dot" />{" "}
+          {publicDemo ? "PUBLIC REVIEW · READ ONLY" : "单用户 · 本地 Demo"}
           <br />
           <small>历史不替你决定未来。</small>
         </div>
@@ -357,33 +378,46 @@ export default function Demo() {
             个人历史 /{" "}
             <b>{navigation.find(([id]) => id === page)?.[1] || "记录"}</b>
           </span>
-          <button
-            className="mode"
-            onClick={() => {
-              setPersonal(!personal);
-              setSession(null);
-              setScenario(null);
-              setResultEvents([]);
-              setPage("welcome");
-            }}
-          >
-            {personal ? "本地个人档案" : "虚构演示档案"} <span>⇄</span>
-          </button>
+          {publicDemo ? (
+            <span className="mode">PUBLIC DEMO · 只读评审版</span>
+          ) : (
+            <button
+              className="mode"
+              onClick={() => {
+                setPersonal(!personal);
+                setSession(null);
+                setScenario(null);
+                setResultEvents([]);
+                setPage("welcome");
+              }}
+            >
+              {personal ? "本地个人档案" : "虚构演示档案"} <span>⇄</span>
+            </button>
+          )}
         </header>
         <main>
           <div className="storage">
             <span className="status-dot" />
-            {mode === "sanity-groq"
-              ? "SANITY CONTENT LAKE · 实时结构化档案"
-              : mode === "local-demo"
-                ? "LOCAL ARCHIVE · 本地持久化档案"
-                : mode}
+            {publicDemo
+              ? "PUBLIC REVIEW · SANITY CONTENT LAKE + CONTEXT"
+              : mode === "sanity-groq"
+                ? "SANITY CONTENT LAKE · 实时结构化档案"
+                : mode === "local-demo"
+                  ? "LOCAL ARCHIVE · 本地持久化档案"
+                  : mode}
             <span>
-              {personal
-                ? "个人数据与演示数据隔离"
-                : "全部示例均为虚构，非你的真实经历"}
+              {publicDemo
+                ? "仅使用虚构演示资料；公网写入和个人档案已关闭"
+                : personal
+                  ? "个人数据与演示数据隔离"
+                  : "全部示例均为虚构，非你的真实经历"}
             </span>
           </div>
+          {publicDemo && (
+            <div className="alert" data-testid="public-demo-banner">
+              这是比赛公开评审版。可查看封存历史、认知轨迹，并运行固定的实时 Sanity Context / Knowledge Base 赋能演示；本次结果不写回 Content Lake。
+            </div>
+          )}
           {scenario && personal && (
             <div className="alert" data-testid="scenario-banner">
               管理员时间场景：{scenario.asOfDate} · T0 不变。实际采集时间单独显示，基线以后的内容不进入本轮历史匹配。
@@ -419,9 +453,9 @@ export default function Demo() {
                   <div className="actions">
                     <button
                       className="primary"
-                      onClick={() => navigate("baseline")}
+                      onClick={() => navigate(publicDemo ? "archive" : "baseline")}
                     >
-                      建立我的 T0 起点 <span>↗</span>
+                      {publicDemo ? "查看虚构历史档案" : "建立我的 T0 起点"} <span>↗</span>
                     </button>
                     <button
                       className="text-button"
@@ -1024,13 +1058,13 @@ export default function Demo() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     run(async () => {
-                      const result = await api("empower", {
-                        current,
-                        demo: !personal,
-                      });
+                      const result = await api(
+                        publicDemo ? "empower-preview" : "empower",
+                        publicDemo ? {} : { current, demo: !personal },
+                      );
                       setSession(result.document);
                       setResultEvents(result.events);
-                      await refresh();
+                      if (!publicDemo) await refresh();
                     });
                   }}
                 >
@@ -1052,22 +1086,27 @@ export default function Demo() {
                         onChange={(e) =>
                           setCurrent({ ...current, [key]: e.target.value })
                         }
+                        readOnly={publicDemo}
                         rows={3}
                       />
                     </label>
                   ))}
                   <div className="actions">
                     <button className="primary" disabled={busy}>
-                      {busy ? "正在查阅历史…" : "调用相似历史 ↗"}
+                      {busy
+                        ? "正在查阅历史…"
+                        : publicDemo
+                          ? "运行实时 Context 演示 ↗"
+                          : "调用相似历史 ↗"}
                     </button>
-                    {latestSession && (
+                    {!publicDemo && latestSession && (
                       <button type="button" className="text-button" onClick={() => {
                         setSession(latestSession);
                         setCurrent(latestSession.current);
                         setResultEvents(eventsAtSession(documents, latestSession, scenario));
                       }}>查看最近一次结果</button>
                     )}
-                    {!personal && (
+                    {!publicDemo && !personal && (
                       <button
                         type="button"
                         className="text-button"
@@ -1075,6 +1114,9 @@ export default function Demo() {
                       >
                         填入演示问题
                       </button>
+                    )}
+                    {publicDemo && (
+                      <span className="source">固定虚构问题 · 结果不持久化</span>
                     )}
                   </div>
                 </form>
@@ -1112,7 +1154,9 @@ export default function Demo() {
                   {session.completeness && <div className="alert" data-testid="empower-completeness">
                     {session.completeness.assessedNodes} 个节点已检查，{session.completeness.coreCompleteNodes} 个核心字段记录完整。
                     以下候选只能使用已记录部分；未完成访谈不等于完整决策证据。
-                    <button type="button" className="text-button" onClick={()=>navigate("gaps")}>进入补缺访谈</button>
+                    {!publicDemo && (
+                      <button type="button" className="text-button" onClick={()=>navigate("gaps")}>进入补缺访谈</button>
+                    )}
                   </div>}
                   {session.matches.map((m, i) => {
                     const e = resultEvents.find(

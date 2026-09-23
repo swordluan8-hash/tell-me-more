@@ -17,6 +17,7 @@ import {
 } from "../domain/workflow";
 import { ALGORITHM_VERSION, currentFeatures, rank } from "../domain/similarity";
 import { repository, storageMode } from "../storage/repository";
+import { serverConfig } from "../storage/config";
 import { retrieve } from "../storage/context";
 import { readScenario } from "../storage/scenario";
 import { eligibleHistory } from "../domain/temporal";
@@ -47,8 +48,66 @@ export async function getArchive(personal = false) {
     documents: docs.filter((d) => d.demo !== personal),
     mode: storageMode(personal),
     scenario: readScenario(personal),
+    publicDemo: serverConfig().publicDemo,
   };
 }
+
+async function empower(payload: unknown, persist: boolean) {
+  const v = z
+      .object({ current: currentDecision, demo: z.boolean() })
+      .parse(payload),
+    id = randomUUID();
+  const features = currentFeatures(v.current, id),
+    retrieved = await retrieve(features, !v.demo);
+  const scenario = readScenario(!v.demo);
+  const repo = repository(!v.demo);
+  const all = await repo.all();
+  const scoped = eligibleHistory(retrieved.events, all, scenario);
+  const ownDocs = all.filter((d) => d.demo === v.demo);
+  const resolved = scoped.events.map((e) => effectiveEvent(e, ownDocs, scenario));
+  const readiness = auditArchive(ownDocs, scenario);
+  const matches = rank(features, resolved);
+  const document = archiveDocument.parse({
+    ...base(id, "empowermentSession", v.demo),
+    _type: "empowermentSession",
+    algorithmVersion: ALGORITHM_VERSION + "+gap-loop-v1",
+    sourceRevisionRefs: applicableSupplements(ownDocs, scenario).map((m) => ref(m._id)),
+    completeness: {
+      assessedNodes: readiness.summary.assessedNodes,
+      coreCompleteNodes: readiness.summary.coreCompleteNodes,
+      pendingFields: readiness.summary.pendingFields,
+      basis: readiness.basis,
+    },
+    candidateCount: scoped.events.length,
+    excludedByTime: scoped.excluded,
+    scenario: scenario
+      ? { id: scenario.id, asOfDate: scenario.asOfDate, timeZone: scenario.timeZone }
+      : undefined,
+    current: v.current,
+    currentFeatures: features,
+    retrievalMode: retrieved.mode,
+    retrievalNotice: retrieved.notice,
+    matches,
+    sourceProvenance: matches.flatMap((m) =>
+      m.components.flatMap((c) => c.provenance),
+    ),
+    conclusion: "历史是参照，最终选择由你完成。",
+  });
+  if (persist) await repo.append([document]);
+  return {
+    document,
+    events: resolved,
+    scenario,
+    readiness: resolved.map((e) =>
+      auditEvent(
+        ownDocs.find((d) => d._id === e._id) as typeof e,
+        ownDocs,
+        scenario,
+      ),
+    ),
+  };
+}
+
 export async function perform(action: string, payload: unknown) {
   if (action === "gap-audit") {
     const v = z.object({ demo:z.boolean() }).parse(payload);
@@ -142,44 +201,13 @@ export async function perform(action: string, payload: unknown) {
     await repo.append([document]);
     return { document };
   }
-  if (action === "empower") {
+  if (action === "empower") return empower(payload, true);
+  if (action === "empower-preview") {
     const v = z
-        .object({ current: currentDecision, demo: z.boolean() })
-        .parse(payload),
-      id = randomUUID();
-    const features = currentFeatures(v.current, id),
-      retrieved = await retrieve(features, !v.demo);
-    const scenario = readScenario(!v.demo);
-    const all = await repository(!v.demo).all();
-    const scoped = eligibleHistory(retrieved.events, all, scenario);
-    const ownDocs = all.filter((d) => d.demo === v.demo);
-    const resolved = scoped.events.map((e) => effectiveEvent(e, ownDocs, scenario));
-    const readiness = auditArchive(ownDocs, scenario);
-    const matches = rank(features, resolved);
-    const document = archiveDocument.parse({
-      ...base(id, "empowermentSession", v.demo),
-      _type: "empowermentSession",
-      algorithmVersion: `${ALGORITHM_VERSION}+gap-loop-v1`,
-      sourceRevisionRefs: applicableSupplements(ownDocs, scenario).map((m) => ref(m._id)),
-      completeness: { assessedNodes:readiness.summary.assessedNodes, coreCompleteNodes:readiness.summary.coreCompleteNodes,
-        pendingFields:readiness.summary.pendingFields, basis:readiness.basis },
-      candidateCount: scoped.events.length,
-      excludedByTime: scoped.excluded,
-      scenario: scenario ? { id: scenario.id, asOfDate: scenario.asOfDate, timeZone: scenario.timeZone } : undefined,
-      current: v.current,
-      currentFeatures: features,
-      retrievalMode: retrieved.mode,
-      retrievalNotice: retrieved.notice,
-      matches,
-      sourceProvenance: matches.flatMap((m) =>
-        m.components.flatMap((c) => c.provenance),
-      ),
-      conclusion: "历史是参照，最终选择由你完成。",
-    });
-    await repository(!v.demo).append([document]);
-    return { document, events: resolved, scenario,
-      readiness: resolved.map((e) => auditEvent(ownDocs.find((d) => d._id === e._id) as typeof e, ownDocs, scenario)) };
-
+      .object({ current: currentDecision, demo: z.literal(true) })
+      .parse(payload);
+    return empower(v, false);
   }
+
   throw new Error("UNKNOWN_ACTION");
 }
