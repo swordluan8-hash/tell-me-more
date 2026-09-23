@@ -9,6 +9,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   dimensions,
   exampleDecision,
+  hindsightExperimentDecision,
   interviewFields,
   questions,
   unknownLabels,
@@ -37,6 +38,28 @@ type Draft = { state: Answer["state"]; text: string };
 type Artifact = Extract<ArchiveDocument, { _type: "artifact" }>;
 type Session = Extract<ArchiveDocument, { _type: "empowermentSession" }>;
 type EntryMode = "choose" | "object" | "reconstruct";
+type ExperimentRankRow = {
+  eventRef: { _ref: string };
+  score: number;
+  leakedMatched?: string[];
+  laterEvidence?: string[];
+};
+type HindsightExperiment = {
+  current: {
+    happened: string;
+    urgency: string;
+    options: string;
+    stuck: string;
+  };
+  retrievalMode: string;
+  retrievalNotice: string;
+  candidateCount: number;
+  temporalIntegrity: ExperimentRankRow[];
+  naiveFullHistory: ExperimentRankRow[];
+  rankingFlipped: boolean;
+  events: HistoricalEvent[];
+  conclusion: string;
+};
 const navigation: [Page, string, string][] = [
   ["welcome", "起点", "01"],
   ["artifact", "历史入口", "02"],
@@ -115,6 +138,7 @@ export default function Demo() {
     [personal, setPersonal] = useState(false),
     [publicDemo, setPublicDemo] = useState(false),
     [busy, setBusy] = useState(false),
+    [hindsightBusy, setHindsightBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [choices, setChoices] = useState<number[]>(Array(10).fill(-1));
@@ -151,7 +175,8 @@ export default function Demo() {
       stuck: "",
     }),
     [session, setSession] = useState<Session | null>(null),
-    [resultEvents, setResultEvents] = useState<HistoricalEvent[]>([]);
+    [resultEvents, setResultEvents] = useState<HistoricalEvent[]>([]),
+    [hindsight, setHindsight] = useState<HindsightExperiment | null>(null);
   const events = documents.filter(
     (d): d is HistoricalEvent => d._type === "historicalEvent",
   );
@@ -186,6 +211,20 @@ export default function Demo() {
       setBusy(false);
     }
   }
+  async function runHindsight() {
+    setHindsightBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await api("hindsight-preview", {});
+      setHindsight(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "对照实验未完成");
+    } finally {
+      setHindsightBusy(false);
+    }
+  }
+
   function navigate(p: Page) {
     if (
       publicDemo &&
@@ -1137,6 +1176,95 @@ export default function Demo() {
                   </small>
                 </div>
               </div>
+              {publicDemo && (
+                <section className="panel hindsight-lab" data-testid="hindsight-lab">
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">HINDSIGHT LEAKAGE · MODELING A/B TEST</p>
+                      <h2>同一当前问题、同一批 Context 候选，两种历史建模会得到什么？</h2>
+                    </div>
+                    <span className="pill">READ ONLY · LIVE CONTEXT</span>
+                  </div>
+                  <p className="lead">
+                    当前决策里有一个合理担忧：“交付延期和额外协调”。2018 年那次合作后来真的发生了这些事，
+                    但在 2018 年做决定时，这些结果还不存在。左边模拟一个常见的 memory-RAG baseline：
+                    把当时事实与后来结果压成一段全文；右边运行叙能实际使用的 Temporal Integrity 结构化匹配。
+                  </p>
+                  <div className="experiment-query">
+                    <b>固定当前决策</b>
+                    <p>{hindsightExperimentDecision.happened}</p>
+                    <p>{hindsightExperimentDecision.urgency}</p>
+                    <small>{hindsightExperimentDecision.stuck}</small>
+                  </div>
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={hindsightBusy}
+                    onClick={runHindsight}
+                  >
+                    {hindsightBusy
+                      ? "正在运行对照实验…"
+                      : "运行 Hindsight Leakage 对照实验 ↗"}
+                  </button>
+
+                  {hindsight && (
+                    <div className="hindsight-results" aria-live="polite">
+                      <div className="alert">
+                        候选来源：{hindsight.retrievalMode} · 同一批 {hindsight.candidateCount} 个历史事件 · 不写回 Content Lake
+                      </div>
+                      <div className="comparison-grid">
+                        <article className="experiment-column leaky-column">
+                          <span className="eyebrow">A · NAIVE FULL-HISTORY MATCH</span>
+                          <h3>Baseline：把整段历史压成一块可搜索文本</h3>
+                          <p>
+                            当时信息与后来结果被混在同一文本空间。今天的担忧因此可能命中“未来才发生”的词。
+                          </p>
+                          <ExperimentRanking
+                            rows={hindsight.naiveFullHistory}
+                            events={hindsight.events}
+                            showLeak
+                          />
+                        </article>
+                        <article className="experiment-column safe-column">
+                          <span className="eyebrow">B · TEMPORAL INTEGRITY</span>
+                          <h3>Production：只比较当时可知条件</h3>
+                          <p>
+                            Context 先召回候选；Content Lake 回读封存原档；结构化排名只使用 decision-time fields。
+                          </p>
+                          <ExperimentRanking
+                            rows={hindsight.temporalIntegrity}
+                            events={hindsight.events}
+                          />
+                        </article>
+                      </div>
+                      <p className="source score-note">
+                        两列分数来自不同的比较模型，绝对数值不能跨列比较；本实验比较的是在同一当前问题与同一批候选下，各模型的列内排名，以及 later-only 信息是否改变了第一参照。
+                      </p>
+                      <div className="flip-note" data-testid="hindsight-rank-flip">
+                        <b>{hindsight.rankingFlipped ? "RANK FLIPPED" : "NO RANK FLIP"}</b>
+                        <span>{hindsight.conclusion}</span>
+                      </div>
+                      {hindsight.naiveFullHistory[0]?.laterEvidence?.length ? (
+                        <div className="leak-proof">
+                          <span>2018 后来结果 · 不应进入当时匹配</span>
+                          <blockquote>
+                            {hindsight.naiveFullHistory[0].laterEvidence[0]}
+                          </blockquote>
+                          <p>
+                            真正只从后来结果泄漏进来的共同词：
+                            <b>
+                              {" "}
+                              {hindsight.naiveFullHistory[0].leakedMatched?.join(" / ")}
+                            </b>
+                          </p>
+                        </div>
+                      ) : null}
+                      <small className="source">{hindsight.retrievalNotice}</small>
+                    </div>
+                  )}
+                </section>
+              )}
+
               {session && (
                 <section className="results" aria-live="polite">
                   <div className="section-heading">
@@ -1274,6 +1402,39 @@ export default function Demo() {
           叙能 / TELL ME MORE <span>忠实记录 · 保留未知 · 选择自主</span>
         </footer>
       </div>
+    </div>
+  );
+}
+
+function ExperimentRanking({
+  rows,
+  events,
+  showLeak = false,
+}: {
+  rows: ExperimentRankRow[];
+  events: HistoricalEvent[];
+  showLeak?: boolean;
+}) {
+  return (
+    <div className="experiment-ranking">
+      {rows.map((row, index) => {
+        const event = events.find((item) => item._id === row.eventRef._ref);
+        return (
+          <div className="experiment-rank-row" key={row.eventRef._ref}>
+            <span className="rank-index">{index + 1}</span>
+            <div>
+              <b>{event?.title || row.eventRef._ref}</b>
+              <small>{event?.eventStartDate || "日期未知"}</small>
+              {showLeak && row.leakedMatched?.length ? (
+                <small className="leak-words">
+                  后来信息命中：{row.leakedMatched.join(" / ")}
+                </small>
+              ) : null}
+            </div>
+            <strong>{row.score.toFixed(2)}</strong>
+          </div>
+        );
+      })}
     </div>
   );
 }

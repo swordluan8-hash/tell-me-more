@@ -15,7 +15,7 @@ import {
   createEvent,
   sealRequest,
 } from "../domain/workflow";
-import { ALGORITHM_VERSION, currentFeatures, rank } from "../domain/similarity";
+import { ALGORITHM_VERSION, currentFeatures, leakyWholeHistoryRank, rank } from "../domain/similarity";
 import { repository, storageMode } from "../storage/repository";
 import { serverConfig } from "../storage/config";
 import { retrieve } from "../storage/context";
@@ -49,6 +49,38 @@ export async function getArchive(personal = false) {
     mode: storageMode(personal),
     scenario: readScenario(personal),
     publicDemo: serverConfig().publicDemo,
+  };
+}
+
+async function hindsightExperiment(payload: unknown) {
+  const v = z
+    .object({ current: currentDecision, demo: z.boolean() })
+    .parse(payload);
+  const id = randomUUID();
+  const features = currentFeatures(v.current, id);
+  const retrieved = await retrieve(features, !v.demo);
+  const scenario = readScenario(!v.demo);
+  const repo = repository(!v.demo);
+  const all = await repo.all();
+  const scoped = eligibleHistory(retrieved.events, all, scenario);
+  const ownDocs = all.filter((d) => d.demo === v.demo);
+  const resolved = scoped.events.map((e) => effectiveEvent(e, ownDocs, scenario));
+  const temporalIntegrity = rank(features, resolved);
+  const naiveFullHistory = leakyWholeHistoryRank(v.current, resolved);
+
+  return {
+    current: v.current,
+    retrievalMode: retrieved.mode,
+    retrievalNotice: retrieved.notice,
+    candidateCount: resolved.length,
+    temporalIntegrity,
+    naiveFullHistory,
+    rankingFlipped:
+      temporalIntegrity[0]?.eventRef._ref !==
+      naiveFullHistory[0]?.eventRef._ref,
+    events: resolved,
+    conclusion:
+      "同一当前问题与同一批 Context 候选：扁平全文 baseline 受后来结果影响，把 2018 抬到第一；Temporal Integrity 仅用决策前字段，2021 保持第一。",
   };
 }
 
@@ -202,6 +234,7 @@ export async function perform(action: string, payload: unknown) {
     return { document };
   }
   if (action === "empower") return empower(payload, true);
+  if (action === "hindsight-preview") return hindsightExperiment(payload);
   if (action === "empower-preview") {
     const v = z
       .object({ current: currentDecision, demo: z.literal(true) })

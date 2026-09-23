@@ -9,8 +9,8 @@ import {
   answer,
   type HistoricalEvent,
 } from "../packages/domain/model";
-import { compare, currentFeatures, rank } from "../packages/domain/similarity";
-import { exampleDecision, dimensions } from "../packages/domain/catalog";
+import { compare, currentFeatures, leakyWholeHistoryRank, rank } from "../packages/domain/similarity";
+import { exampleDecision, hindsightExperimentDecision, dimensions } from "../packages/domain/catalog";
 import {
   missingFields,
   createEvent,
@@ -83,6 +83,32 @@ describe("product constitution", () => {
       /你应该|唯一正确|一定会|建议选择/,
     );
   });
+  it("hindsight leakage lab demonstrates a real rank flip without changing candidates", () => {
+    const experimentFeatures = currentFeatures(
+      hindsightExperimentDecision,
+      "hindsight-test",
+    );
+    const temporal = rank(experimentFeatures, events);
+    const leaky = leakyWholeHistoryRank(hindsightExperimentDecision, events);
+
+    expect(temporal.map((m) => m.eventRef._ref)).toEqual([
+      "demo-event-2",
+      "demo-event-1",
+      "demo-event-3",
+    ]);
+    expect(leaky.map((m) => m.eventRef._ref)).toEqual([
+      "demo-event-1",
+      "demo-event-2",
+      "demo-event-3",
+    ]);
+    expect(leaky[0].leakedMatched).toEqual(
+      expect.arrayContaining(["延期", "协调", "额外"]),
+    );
+    expect(leaky[0].laterEvidence.join("\n")).toContain(
+      "两个月后交付延期，我承担了额外的协调工作。",
+    );
+  });
+
   it("outcome and later interpretations cannot affect similarity or candidate query", () => {
     const changed = structuredClone(events[0]);
     changed.fields.outcome.text = "未来大获成功";

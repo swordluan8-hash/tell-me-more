@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getArchive, perform } from "../../../../packages/application/service";
 import { ZodError } from "zod";
 import { serverConfig } from "../../../../packages/storage/config";
-import { exampleDecision } from "../../../../packages/domain/catalog";
+import { exampleDecision, hindsightExperimentDecision } from "../../../../packages/domain/catalog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 function local(req: NextRequest) {
@@ -56,23 +56,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PAYLOAD_TOO_LARGE" }, { status: 413 });
     const { action, payload } = JSON.parse(raw);
     if (publicDemo) {
-      if (action !== "empower-preview")
+      if (action !== "empower-preview" && action !== "hindsight-preview")
         return NextResponse.json(
           { error: "PUBLIC_DEMO_READ_ONLY" },
           { status: 403 },
         );
-      return NextResponse.json(
-        await perform("empower-preview", {
-          current: exampleDecision,
-          demo: true,
-        }),
-        {
-          status: 200,
-          headers: {
-            "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-          },
+      const result =
+        action === "hindsight-preview"
+          ? await perform("hindsight-preview", {
+              current: hindsightExperimentDecision,
+              demo: true,
+            })
+          : await perform("empower-preview", {
+              current: exampleDecision,
+              demo: true,
+            });
+      return NextResponse.json(result, {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
         },
-      );
+      });
     }
     return NextResponse.json(await perform(action, payload), { status: 201 });
   } catch (error) {

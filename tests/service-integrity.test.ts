@@ -7,7 +7,7 @@ vi.mock("../packages/storage/context", () => ({ retrieve: vi.fn() }));
 import { repository } from "../packages/storage/repository";
 import { retrieve } from "../packages/storage/context";
 import { perform } from "../packages/application/service";
-import { exampleDecision } from "../packages/domain/catalog";
+import { exampleDecision, hindsightExperimentDecision } from "../packages/domain/catalog";
 let docs: ArchiveDocument[];
 let appendCalls: number;
 beforeEach(() => {
@@ -53,6 +53,34 @@ describe("production boundaries under test", () => {
     const p = result.documents.find((d)=>d._type === "cognitionPlane");
     expect(p?.periodStart).toBe("2026-09-23");
     expect(p?.recordedAt).toBe("2026-09-22T23:30:00.000Z");
+  });
+
+  it("hindsight preview uses the same Context candidates and never persists", async () => {
+    const before = docs.length;
+    const result = (await perform("hindsight-preview", {
+      current: hindsightExperimentDecision,
+      demo: true,
+    })) as {
+      retrievalMode: string;
+      temporalIntegrity: { eventRef: { _ref: string } }[];
+      naiveFullHistory: {
+        eventRef: { _ref: string };
+        leakedMatched: string[];
+      }[];
+      rankingFlipped: boolean;
+      events: HistoricalEvent[];
+    };
+
+    expect(result.retrievalMode).toBe("context");
+    expect(result.events).toHaveLength(3);
+    expect(result.temporalIntegrity[0].eventRef._ref).toBe("demo-event-2");
+    expect(result.naiveFullHistory[0].eventRef._ref).toBe("demo-event-1");
+    expect(result.rankingFlipped).toBe(true);
+    expect(result.naiveFullHistory[0].leakedMatched).toEqual(
+      expect.arrayContaining(["延期", "协调", "额外"]),
+    );
+    expect(docs.length).toBe(before);
+    expect(appendCalls).toBe(0);
   });
 
   it("public preview returns a Context-backed result without persisting a session", async () => {

@@ -104,3 +104,10 @@ export const exampleDecision = {
   options: "先做小范围试点；直接加入；暂缓合作。",
   stuck: "目标：收入与责任边界都很重要；信息：目前信息不足。",
 };
+export const hindsightExperimentDecision = {
+  happened: "一个新的合作项目出现，需要明确工作职责。",
+  urgency: "对方希望本周答复，时间有限，也担心交付延期和额外协调。",
+  options: "先做小范围试点；直接加入；暂缓合作。",
+  stuck:
+    "角色：我作为项目负责人，与合作伙伴共同交付；目标：收入与责任边界都很重要；信息：试点前信息不足。",
+};

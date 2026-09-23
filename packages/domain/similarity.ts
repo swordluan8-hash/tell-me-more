@@ -91,6 +91,89 @@ export function rank(features: Features, events: HistoricalEvent[]) {
     );
 }
 
+function knownAnswerText(value: Answer | undefined): string {
+  return value?.state === "known" ? value.text : "";
+}
+
+function eventDecisionTimeText(event: HistoricalEvent): string {
+  return Object.values(event.features)
+    .filter((value) => value.state === "known")
+    .map((value) => value.text)
+    .join("\n");
+}
+
+function eventLaterOnlyTexts(event: HistoricalEvent): string[] {
+  return [
+    ...event.laterLearned.map(knownAnswerText),
+    ...event.outcomeFacts.map(knownAnswerText),
+    ...event.laterEvaluations.map(knownAnswerText),
+    ...event.currentInterpretations.map(knownAnswerText),
+    knownAnswerText(event.finalUserEvaluation),
+    ...event.decisionNodes.flatMap((node) => [
+      knownAnswerText(node.immediateResult),
+      knownAnswerText(node.longTermResult),
+      knownAnswerText(node.userEvaluationLater),
+    ]),
+  ].filter((text) => text.trim().length > 0);
+}
+
+function tokenOverlap(leftText: string, rightText: string) {
+  const left = [...new Set(tokens(leftText))];
+  const right = [...new Set(tokens(rightText))];
+  const rightSet = new Set(right);
+  const matched = left.filter((token) => rightSet.has(token));
+  const union = new Set([...left, ...right]).size;
+  return {
+    score: union ? Math.round((matched.length / union) * 10000) / 100 : 0,
+    matched,
+  };
+}
+
+/**
+ * Intentionally wrong comparison used only by the public Hindsight Leakage lab.
+ * It flattens decision-time facts and later outcomes into one searchable record.
+ * Production matching must never call this function.
+ */
+export function leakyWholeHistoryRank(
+  current: unknown,
+  events: HistoricalEvent[],
+) {
+  const v = currentDecision.parse(current);
+  const query = [v.happened, v.urgency, v.options, v.stuck].join("\n");
+  const queryTokens = [...new Set(tokens(query))];
+
+  return events
+    .map((event) => {
+      const preDecision = eventDecisionTimeText(event);
+      const laterTexts = eventLaterOnlyTexts(event);
+      const later = laterTexts.join("\n");
+      const full = [preDecision, later].filter(Boolean).join("\n");
+      const overlap = tokenOverlap(query, full);
+      const preTokens = new Set(tokens(preDecision));
+      const laterTokens = new Set(tokens(later));
+      const leakedMatched = queryTokens.filter(
+        (token) => laterTokens.has(token) && !preTokens.has(token),
+      );
+      const leakedSet = new Set(leakedMatched);
+      const laterEvidence = laterTexts.filter((text) =>
+        tokens(text).some((token) => leakedSet.has(token)),
+      );
+
+      return {
+        eventRef: ref(event._id),
+        score: overlap.score,
+        matched: overlap.matched,
+        leakedMatched,
+        laterEvidence,
+      };
+    })
+    .filter((row) => row.score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.eventRef._ref.localeCompare(b.eventRef._ref),
+    );
+}
+
 // An information-source, a generic deadline, or a shared tool alone does not make
 // two decisions analogous. At least a recorded subject, goal or option must match.
 export function isRelevantMatch(m: ReturnType<typeof compare>): boolean {
