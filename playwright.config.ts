@@ -11,7 +11,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "rm -f .data/e2e-archive.json && TMM_STORAGE=local-demo TMM_LOCAL_ARCHIVE_PATH=.data/e2e-archive.json npm run dev --workspace web -- --port 31877",
+      "rm -f .data/e2e-archive.json && TMM_E2E=1 npm run build --workspace web && TMM_E2E=1 TMM_STORAGE=local-demo TMM_LOCAL_ARCHIVE_PATH=.data/e2e-archive.json npm run start --workspace web -- --port 31877",
     url: "http://127.0.0.1:31877",
     reuseExistingServer: true,
     timeout: 120000,

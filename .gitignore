@@ -12,3 +12,5 @@ playwright-report/
 .serena/
 sanity/claim-project.html
 .data/e2e-archive.json
+.next-e2e/
+web/.next-e2e/

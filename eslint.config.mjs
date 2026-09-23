@@ -6,6 +6,7 @@ export default defineConfig([
   ...ts,
   globalIgnores([
     "**/.next/**",
+    "**/.next-e2e/**",
     "**/node_modules/**",
     "**/dist/**",
     "**/next-env.d.ts",

@@ -1,9 +1,73 @@
 # 叙能 / Tell Me More
 
+[![CI](https://github.com/swordluan8-hash/tell-me-more/actions/workflows/ci.yml/badge.svg)](https://github.com/swordluan8-hash/tell-me-more/actions/workflows/ci.yml)
+
 A single-user, evidence-first decision-history demo, governed by
 [PRODUCT_SPEC_V2.md](PRODUCT_SPEC_V2.md). It records artifacts → verbatim recall →
 confirmed sealed events → explainable historical comparisons. It never generates
 a final decision, personality verdict, or growth score.
+
+## Sanity Challenge 2026 · Path One
+
+This repository is the submission codebase for **Path One: Ship an Agent That
+Queries Real Content**.
+
+- **Sanity project ID:** `3tdecpiq`
+- **Knowledge Base ID:** `kbrqT3iILYmW`
+- **Retrieval:** Sanity Context MCP backed by the Knowledge Base
+- **Structured source of truth:** sealed Sanity documents with explicit provenance
+- **Safety boundary:** historical outcomes and later evaluations never enter
+  candidate matching or similarity features
+
+Tell Me More is built for decisions where a generic answer is not enough. It
+turns confirmed personal history into source-linked structured records, then uses
+Sanity Context to recall relevant historical material. The application maps those
+candidates back to the sealed Content Lake records and performs transparent
+pre-decision reranking before showing similarities, differences, and provenance.
+The user makes the final decision.
+
+### Why structured content matters
+
+A keyword-search memory app could flatten the past into prose. This demo cannot:
+it must keep the **original artifact**, **verbatim recall**, **decision-time
+conditions**, **actual choice**, **later outcome**, **later evaluation**,
+**cognition plane**, and **append-only supplements** separate and source-linked.
+
+That separation is what lets the agent:
+
+1. retrieve semantically through Sanity Context / Knowledge Base;
+2. compare only information that was available at decision time;
+3. exclude future outcomes from matching;
+4. distinguish a user's explicit “I don't know” from missing data;
+5. append later recall without rewriting sealed history; and
+6. show the exact source behind every displayed historical claim.
+
+```mermaid
+flowchart LR
+    U[User / current decision] --> W[Next.js workflow]
+    W --> C[Current decision features]
+    C --> MCP[Sanity Context MCP]
+    MCP --> KB[Knowledge Base]
+    KB --> R[Candidate historical events]
+    R --> CL[Sealed Content Lake records]
+    CL --> X[Deterministic pre-decision reranking]
+    X --> V[Similarity + differences + provenance]
+    V --> U
+
+    A[Artifact / later-recall anchor] --> I[Interview + gap audit]
+    I --> S[Confirmed append-only archive]
+    S --> CL
+```
+
+### Demo screenshots
+
+Synthetic demo only; no personal-history content is included in these images.
+
+![Empowerment comparison showing source-linked historical candidates](docs/screenshots/empower-desktop.png)
+
+<p align="center">
+  <img src="docs/screenshots/home-mobile.png" width="390" alt="Tell Me More mobile home screen" />
+</p>
 
 ## Run
 
