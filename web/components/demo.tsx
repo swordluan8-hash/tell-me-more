@@ -471,7 +471,7 @@ export default function Demo() {
           </div>
           {publicDemo && (
             <div className="alert" data-testid="public-demo-banner">
-              <b>JUDGE MODE · READ ONLY.</b> Synthetic history only. Review the sealed archive and timeline, then run the live Sanity Context / Knowledge Base Empower demo and Hindsight Leakage test. Nothing in this public session is written back to Content Lake.
+              <b>JUDGE MODE · READ ONLY.</b> This public build demonstrates the product loop with synthetic history: evidence → recall/interview → sealed decision history → long-term archive → Empower. Sanity Context / Knowledge Base powers historical recall. The Hindsight Leakage lab is only a secondary integrity test. Nothing in this public session is written back to Content Lake.
             </div>
           )}
           {scenario && personal && (
@@ -493,18 +493,42 @@ export default function Demo() {
             <>
               <section className="hero">
                 <div>
-                  <p className="eyebrow">YOUR HISTORY, YOUR REFERENCE</p>
+                  <p className="eyebrow">
+                    {publicDemo
+                      ? "REAL ARTIFACTS → INTERVIEW → SEALED HISTORY → EMPOWER"
+                      : "YOUR HISTORY, YOUR REFERENCE"}
+                  </p>
                   <h1>
-                    历史是参照。
-                    <br />
-                    <em>选择属于你。</em>
+                    {publicDemo ? (
+                      <>
+                        真实经历长期积累。
+                        <br />
+                        <em>需要选择时，再调用自己的历史。</em>
+                      </>
+                    ) : (
+                      <>
+                        历史是参照。
+                        <br />
+                        <em>选择属于你。</em>
+                      </>
+                    )}
                   </h1>
                   <p className="lead">
-                    有旧物，从证据开始；没有旧物，也能从人生时间线开始。
-                    <br />
-                    还原当时知道什么、为什么选择，
-                    <br />
-                    让真实的个人历史成为今天的第二参照。
+                    {publicDemo ? (
+                      <>
+                        Start from real artifacts or confirmed life anchors. The Agent records the user&apos;s own words, asks only for missing decision fields, seals the event, and accumulates a traceable personal decision history.
+                        <br />
+                        当新的选择出现，按下“赋能”，从自己的历史中调出相似事件、当时选择、结果、后来评价和来源，作为第二参照。
+                      </>
+                    ) : (
+                      <>
+                        有旧物，从证据开始；没有旧物，也能从人生时间线开始。
+                        <br />
+                        还原当时知道什么、为什么选择，
+                        <br />
+                        让真实的个人历史成为今天的第二参照。
+                      </>
+                    )}
                   </p>
                   <div className="actions">
                     <button
@@ -552,22 +576,49 @@ export default function Demo() {
                   </span>
                 </div>
               </section>
-              <section className="steps-grid">
-                <article>
-                  <span>01 / 找到入口</span>
-                  <h3>旧物或人生锚点，都可以</h3>
-                  <p>有原件就封存原件；没有旧物，就从你确认发生过的地点、搬家、工作或关系变化开始。</p>
-                </article>
-                <article>
-                  <span>02 / 还原当时</span>
-                  <h3>把选择放回情境</h3>
-                  <p>保留当时可见的选项，也允许不知道、记不清。</p>
-                </article>
-                <article>
-                  <span>03 / 调用历史</span>
-                  <h3>找到相似的过去</h3>
-                  <p>看共同点、差异和来源。最终决定始终由你完成。</p>
-                </article>
+              <section className={publicDemo ? "steps-grid product-flow" : "steps-grid"}>
+                {publicDemo ? (
+                  <>
+                    <article>
+                      <span>01 / REAL EVIDENCE</span>
+                      <h3>真实物件或明确的人生锚点</h3>
+                      <p>原件先封存。物件、后来回忆和系统分类分层保存，谁也不能覆盖谁。</p>
+                    </article>
+                    <article>
+                      <span>02 / ACTIVE GAP INTERVIEW</span>
+                      <h3>先自由叙述，只补真正缺口</h3>
+                      <p>Agent 不替用户编故事；记录原话，只针对尚缺的决策字段中性追问。</p>
+                    </article>
+                    <article>
+                      <span>03 / LONG-TERM ARCHIVE</span>
+                      <h3>一个事件一个事件长期积累</h3>
+                      <p>保存当时信息、选择、理由、结果和后来评价；新回忆只能追加，不能改写原记录。</p>
+                    </article>
+                    <article>
+                      <span>04 / EMPOWER</span>
+                      <h3>重要选择出现时调用自己的历史</h3>
+                      <p>统计相似经历、过去怎么选、结果怎样、后来如何评价，并逐条给出来源；用户自己决定。</p>
+                    </article>
+                  </>
+                ) : (
+                  <>
+                    <article>
+                      <span>01 / 找到入口</span>
+                      <h3>旧物或人生锚点，都可以</h3>
+                      <p>有原件就封存原件；没有旧物，就从你确认发生过的地点、搬家、工作或关系变化开始。</p>
+                    </article>
+                    <article>
+                      <span>02 / 还原当时</span>
+                      <h3>把选择放回情境</h3>
+                      <p>保留当时可见的选项，也允许不知道、记不清。</p>
+                    </article>
+                    <article>
+                      <span>03 / 调用历史</span>
+                      <h3>找到相似的过去</h3>
+                      <p>看共同点、差异和来源。最终决定始终由你完成。</p>
+                    </article>
+                  </>
+                )}
               </section>
               <div className="section-heading">
                 <h2>{personal ? "已保存的个人历史" : "已封存的演示片段"}</h2>
@@ -1107,9 +1158,9 @@ export default function Demo() {
           {page === "empower" && (
             <>
               <PageTitle
-                kicker="04 · A SECOND REFERENCE"
-                title="此刻的选择，过去的参照。"
-                text="说明四件事，再从你的历史中寻找可比较的情境。历史结果只供回看，不参与相似匹配。"
+                kicker="04 · EMPOWER · YOUR OWN HISTORY AS A SECOND REFERENCE"
+                title="当下遇到选择，调用你自己过去真实的选择。"
+                text="说明四件事，Agent 从长期个人历史中找相似事件，并呈现过去发生过多少次、当时怎么选、为什么、结果怎样、后来如何评价以及每条来源。叙能不替你决定。"
               />
               <div className="empower-grid">
                 <form
@@ -1196,108 +1247,6 @@ export default function Demo() {
                   </small>
                 </div>
               </div>
-              {publicDemo && (
-                <section className="panel hindsight-lab" data-testid="hindsight-lab">
-                  <div className="section-heading">
-                    <div>
-                      <p className="eyebrow">HINDSIGHT LEAKAGE · MODELING A/B TEST</p>
-                      <h2>Same question. Same Context candidates. Two ways to model history.</h2>
-                      <p className="muted">同一当前问题、同一批 Context 候选，两种历史建模会得到什么？</p>
-                    </div>
-                    <span className="pill">READ ONLY · LIVE CONTEXT</span>
-                  </div>
-                  <p className="lead">
-                    The current decision reasonably worries about <b>delivery delay and extra coordination</b>.
-                    Those things really happened after the 2018 decision — but they did not exist as evidence when that decision was made.
-                    The left side simulates a flattened memory-RAG baseline; the right side runs Tell Me More&apos;s production Temporal Integrity matcher.
-                  </p>
-                  <p className="muted">
-                    当前担忧是“交付延期和额外协调”。2018 后来确实发生了这些事，但它们不属于 2018 当时可知信息。
-                  </p>
-                  <div className="experiment-query">
-                    <b>FIXED CURRENT DECISION / 固定当前决策</b>
-                    <p>A new collaboration needs clearer responsibilities.</p>
-                    <p>Reply due this week; worried about delivery delay and extra coordination.</p>
-                    <small>
-                      Project lead working with a partner · income and responsibility boundaries both matter · information is still incomplete.
-                    </small>
-                    <small className="source">
-                      Original Chinese query: {hindsightExperimentDecision.happened} {hindsightExperimentDecision.urgency}
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className="primary"
-                    disabled={hindsightBusy}
-                    onClick={runHindsight}
-                  >
-                    {hindsightBusy
-                      ? "正在运行对照实验…"
-                      : "RUN HINDSIGHT LEAKAGE TEST / 运行对照实验 ↗"}
-                  </button>
-
-                  {hindsight && (
-                    <div className="hindsight-results" aria-live="polite">
-                      <div className="alert">
-                        LIVE RETRIEVAL: {hindsight.retrievalMode} · SAME {hindsight.candidateCount} CANDIDATES · NO CONTENT LAKE WRITE
-                      </div>
-                      <div className="comparison-grid">
-                        <article className="experiment-column leaky-column">
-                          <span className="eyebrow">A · NAIVE FULL-HISTORY MATCH</span>
-                          <h3>Baseline: flatten the whole history into searchable text</h3>
-                          <p>
-                            Decision-time facts and later outcomes share one text space, so a current concern can match words that only existed in the future.
-                          </p>
-                          <ExperimentRanking
-                            rows={hindsight.naiveFullHistory}
-                            events={hindsight.events}
-                            showLeak
-                          />
-                        </article>
-                        <article className="experiment-column safe-column">
-                          <span className="eyebrow">B · TEMPORAL INTEGRITY</span>
-                          <h3>Production: compare only what was knowable then</h3>
-                          <p>
-                            Context recalls candidates; Content Lake returns the sealed records; structured ranking uses decision-time fields only.
-                          </p>
-                          <ExperimentRanking
-                            rows={hindsight.temporalIntegrity}
-                            events={hindsight.events}
-                          />
-                        </article>
-                      </div>
-                      <p className="source score-note">
-                        Scores use different comparison models and are not comparable across columns. Compare the within-column ranking: same current question, same Context candidates, different historical modeling boundary.
-                      </p>
-                      <div className="flip-note" data-testid="hindsight-rank-flip">
-                        <b>{hindsight.rankingFlipped ? "RANK FLIPPED" : "NO RANK FLIP"}</b>
-                        <span>
-                          Flattened history elevates 2018 because it can see later outcomes. Temporal Integrity keeps 2021 first using decision-time fields.
-                        </span>
-                      </div>
-                      {hindsight.naiveFullHistory[0]?.laterEvidence?.length ? (
-                        <div className="leak-proof">
-                          <span>2018 LATER OUTCOME · MUST NOT ENTER THE 2018 DECISION-TIME MATCH</span>
-                          <blockquote>
-                            “Two months later, delivery was delayed and I took on extra coordination work.”
-                          </blockquote>
-                          <small className="source">
-                            Sealed source text: {hindsight.naiveFullHistory[0].laterEvidence[0]}
-                          </small>
-                          <p>
-                            Later-only matched terms:
-                            <b>{" "}{hindsight.naiveFullHistory[0].leakedMatched?.join(" / ")}</b>
-                          </p>
-                        </div>
-                      ) : null}
-                      <small className="source">
-                        Sanity Context + Knowledge Base recall the candidate history; the application reads the complete sealed Content Lake records before production reranking.
-                      </small>
-                    </div>
-                  )}
-                </section>
-              )}
-
               {session && (
                 <section className="results" aria-live="polite">
                   <div className="section-heading">
@@ -1312,6 +1261,52 @@ export default function Demo() {
                   </p>
                   {session.matches.length === 0 && <div className="panel">现有明确字段没有找到足够的共同内容，不凑数、不强行给结论。</div>}
 
+                  {(() => {
+                    const matched = session.matches
+                      .map((m) => resultEvents.find((e) => e._id === m.eventRef._ref))
+                      .filter((e): e is HistoricalEvent => Boolean(e));
+                    const dates = matched
+                      .map((e) => e.eventStartDate)
+                      .filter((d): d is string => Boolean(d))
+                      .sort();
+                    const period = dates.length
+                      ? dates[0].slice(0, 4) + (dates.length > 1 ? "–" + dates[dates.length - 1].slice(0, 4) : "")
+                      : "时间待补";
+                    return (
+                      <section className="empower-history-summary" data-testid="empower-history-summary">
+                        <div className="history-summary-head">
+                          <div>
+                            <p className="eyebrow">PERSONAL HISTORY BASIS / 个人历史依据</p>
+                            <h2>{matched.length} 条相似历史 · {period}</h2>
+                            <p>
+                              这是你的纵向个人历史参照，不是通用世界答案。下面逐条列出过去怎么选、为什么、实际结果和后来评价。
+                            </p>
+                          </div>
+                          <div className="history-summary-number">
+                            {matched.length}
+                            <small>相似历史事件</small>
+                          </div>
+                        </div>
+                        <div className="history-basis-grid">
+                          {matched.map((e, i) => (
+                            <article key={e._id}>
+                              <span>{String(i + 1).padStart(2, "0")} · {e.eventStartDate || "时间未知"}</span>
+                              <h3>{publicDemo ? experimentTitles[e._id] || e.title : e.title}</h3>
+                              <p><b>当时选择：</b>{e.decisionNodes[0].chosenAction.text}</p>
+                              <p><b>为什么：</b>{e.fields.reason.text}</p>
+                              <p><b>实际结果：</b>{e.fields.outcome.text}</p>
+                              <p><b>后来评价：</b>{e.fields.evaluation.text}</p>
+                              <small>来源事件：{e._id}</small>
+                            </article>
+                          ))}
+                        </div>
+                        <div className="principle-note">
+                          <b>赋能不是第一答案，而是第二参照。</b>
+                          <span>历史只提供个人事实依据；最终选择始终由用户完成。</span>
+                        </div>
+                      </section>
+                    );
+                  })()}
                   {session.completeness && <div className="alert" data-testid="empower-completeness">
                     {session.completeness.assessedNodes} 个节点已检查，{session.completeness.coreCompleteNodes} 个核心字段记录完整。
                     以下候选只能使用已记录部分；未完成访谈不等于完整决策证据。
@@ -1423,6 +1418,108 @@ export default function Demo() {
                   <div className="closing-note">{session.conclusion}</div>
                 </section>
               )}
+              {publicDemo && (
+                <section className="panel hindsight-lab" data-testid="hindsight-lab">
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">SECONDARY INTEGRITY TEST · HINDSIGHT LEAKAGE</p>
+                      <h2>One technical integrity check: can later outcomes corrupt an earlier decision record?</h2>
+                      <p className="muted">同一当前问题、同一批 Context 候选，两种历史建模会得到什么？</p>
+                    </div>
+                    <span className="pill">READ ONLY · LIVE CONTEXT</span>
+                  </div>
+                  <p className="lead">
+                    The current decision reasonably worries about <b>delivery delay and extra coordination</b>.
+                    Those things really happened after the 2018 decision — but they did not exist as evidence when that decision was made.
+                    The left side simulates a flattened memory-RAG baseline; the right side runs Tell Me More&apos;s production Temporal Integrity matcher.
+                  </p>
+                  <p className="muted">
+                    当前担忧是“交付延期和额外协调”。2018 后来确实发生了这些事，但它们不属于 2018 当时可知信息。
+                  </p>
+                  <div className="experiment-query">
+                    <b>FIXED CURRENT DECISION / 固定当前决策</b>
+                    <p>A new collaboration needs clearer responsibilities.</p>
+                    <p>Reply due this week; worried about delivery delay and extra coordination.</p>
+                    <small>
+                      Project lead working with a partner · income and responsibility boundaries both matter · information is still incomplete.
+                    </small>
+                    <small className="source">
+                      Original Chinese query: {hindsightExperimentDecision.happened} {hindsightExperimentDecision.urgency}
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={hindsightBusy}
+                    onClick={runHindsight}
+                  >
+                    {hindsightBusy
+                      ? "正在运行对照实验…"
+                      : "RUN HINDSIGHT LEAKAGE TEST / 运行对照实验 ↗"}
+                  </button>
+
+                  {hindsight && (
+                    <div className="hindsight-results" aria-live="polite">
+                      <div className="alert">
+                        LIVE RETRIEVAL: {hindsight.retrievalMode} · SAME {hindsight.candidateCount} CANDIDATES · NO CONTENT LAKE WRITE
+                      </div>
+                      <div className="comparison-grid">
+                        <article className="experiment-column leaky-column">
+                          <span className="eyebrow">A · NAIVE FULL-HISTORY MATCH</span>
+                          <h3>Baseline: flatten the whole history into searchable text</h3>
+                          <p>
+                            Decision-time facts and later outcomes share one text space, so a current concern can match words that only existed in the future.
+                          </p>
+                          <ExperimentRanking
+                            rows={hindsight.naiveFullHistory}
+                            events={hindsight.events}
+                            showLeak
+                          />
+                        </article>
+                        <article className="experiment-column safe-column">
+                          <span className="eyebrow">B · TEMPORAL INTEGRITY</span>
+                          <h3>Production: compare only what was knowable then</h3>
+                          <p>
+                            Context recalls candidates; Content Lake returns the sealed records; structured ranking uses decision-time fields only.
+                          </p>
+                          <ExperimentRanking
+                            rows={hindsight.temporalIntegrity}
+                            events={hindsight.events}
+                          />
+                        </article>
+                      </div>
+                      <p className="source score-note">
+                        Scores use different comparison models and are not comparable across columns. Compare the within-column ranking: same current question, same Context candidates, different historical modeling boundary.
+                      </p>
+                      <div className="flip-note" data-testid="hindsight-rank-flip">
+                        <b>{hindsight.rankingFlipped ? "RANK FLIPPED" : "NO RANK FLIP"}</b>
+                        <span>
+                          Flattened history elevates 2018 because it can see later outcomes. Temporal Integrity keeps 2021 first using decision-time fields.
+                        </span>
+                      </div>
+                      {hindsight.naiveFullHistory[0]?.laterEvidence?.length ? (
+                        <div className="leak-proof">
+                          <span>2018 LATER OUTCOME · MUST NOT ENTER THE 2018 DECISION-TIME MATCH</span>
+                          <blockquote>
+                            “Two months later, delivery was delayed and I took on extra coordination work.”
+                          </blockquote>
+                          <small className="source">
+                            Sealed source text: {hindsight.naiveFullHistory[0].laterEvidence[0]}
+                          </small>
+                          <p>
+                            Later-only matched terms:
+                            <b>{" "}{hindsight.naiveFullHistory[0].leakedMatched?.join(" / ")}</b>
+                          </p>
+                        </div>
+                      ) : null}
+                      <small className="source">
+                        Sanity Context + Knowledge Base recall the candidate history; the application reads the complete sealed Content Lake records before production reranking.
+                      </small>
+                    </div>
+                  )}
+                </section>
+              )}
+
             </>
           )}
           {page === "timeline" && <Timeline documents={documents} scenario={scenario} />}
