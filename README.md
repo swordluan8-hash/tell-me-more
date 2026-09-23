@@ -18,7 +18,7 @@ npm run typecheck
 npm test
 npm run build
 npx playwright install chromium
-npm run test:e2e               # requires the app running; creates synthetic records
+npm run test:e2e               # starts an isolated local-demo server and never writes production
 ```
 
 Only localhost requests are accepted. This is not an authenticated public service.
@@ -27,7 +27,7 @@ The UI is Chinese; labels distinguish synthetic demo content and personal histor
 ## Demo walkthrough
 
 1. Open the welcome page. Complete ten T0 questions and explicitly seal the baseline.
-2. **物件与访谈**: enter a text artifact, or select an image for metadata + SHA-256.
+2. **02 历史入口**: choose “我有旧物 / 旧记录” or “我没有旧物”. For an object, enter text or select an image for metadata + SHA-256; without an object, seal a later-recall anchor first.
    In demo mode, explicitly attest that the artifact is synthetic before cloud upload.
 3. Confirm the verbatim artifact readback. Narrate freely; then assign original
    sentences to the eight fields. Only the next missing field is requested.
@@ -37,12 +37,15 @@ The UI is Chinese; labels distinguish synthetic demo content and personal histor
 5. **赋能 → 填入演示问题 → 调用相似历史** returns multiple source events. Expand
    the components to see shared words, differences, weights, and provenance. Open
    a source event to inspect its original evidence and later recall.
-6. **认知轨迹** compares a reconstructed 2018 plane and T0 using sourced original
+6. **认知轨迹** compares reconstructed historical planes and T0 using sourced original
    statements. Differences are descriptive; neither time point is scored as better.
+7. **06 补缺访谈** audits each decision node, asks only for missing fields, accepts explicit unknown states, and appends confirmed exact-quote supplements without rewriting sealed history.
 
 The initial seed has 12 synthetic documents: 3 artifacts, 3 memories, 3 historical
 events, 2 cognition planes, and 1 baseline. Empower sessions are created on use.
 Demo questionnaire runs may append additional demonstration T0 snapshots.
+
+Current verification: 53 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, and the production dataset remains at exactly 12 canonical documents / 3 historical events after E2E. Browser tests use an isolated gitignored local archive.
 
 ## Sanity and Context
 
