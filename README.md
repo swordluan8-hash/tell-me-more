@@ -66,8 +66,7 @@ flowchart LR
     KB --> R[Candidate historical events]
     R --> CL[Sealed Content Lake records]
     CL --> X[Deterministic pre-decision reranking]
-    X --> V[Similarity + differences + provenance]
-    V --> U
+    X --> EA[Empower Analysis V1]\n    EA --> V[Decision improvement + cognition/capability evidence + provenance]\n    V --> U
 
     A[Artifact / later-recall anchor] --> I[Interview + gap audit]
     I --> S[Confirmed append-only archive]
@@ -95,6 +94,32 @@ The fixed public Empower question comes from the owner's real May 28 session. Th
 - 18 historical candidates returned by the current real Knowledge Base / Context retrieval
 - 4 structured matches retained for the current decision
 
+### Empower Analysis V1
+
+Context recall is **not** the final Empower output. After recall and structured reranking, `Empower Analysis V1` converts the matched personal history into current decision support.
+
+Current real-session output:
+
+- **7 / 8 current decision dimensions recorded**; the missing dimension is role / responsibility position;
+- **4 current visible paths vs a maximum of 2 explicitly recorded in the matched historical events** — evidence of wider visible-option breadth, not a global “growth score”;
+- **4 matched historical cognition planes compared with T0**;
+- **5 decision-improvement actions** generated from the owner’s own history and current evidence;
+- separate **cognition empowerment** and **capability empowerment** sections;
+- every action links back to a historical event or verbatim current evidence.
+
+The five current decision-improvement actions are:
+
+1. complete the current role / responsibility position;
+2. replace early-feeling judgments with explicit validation conditions;
+3. stage investment instead of making one large commitment before validation;
+4. do not treat the familiar old path as automatically safe;
+5. turn the chosen direction into an executable first step with explicit tool gaps.
+
+These are **process improvements**, not a final A/B choice. The user still decides.
+
+Implementation spec: [`EMPOWER_ANALYSIS_V1.md`](EMPOWER_ANALYSIS_V1.md)
+
+![Real Empower Analysis V1 output](docs/screenshots/real-history-empower-analysis.png)
 ![Real-history home](docs/screenshots/real-history-home.png)
 
 ![Real personal-history archive and full verbatim corpus](docs/screenshots/real-history-archive.png)
@@ -128,9 +153,7 @@ The local product UI is Chinese. Judge mode uses English-first bilingual guidanc
 4. Compare the verbatim layer with the structured event/classification layer; the system does not present classifications as if they were original quotes.
 5. Open **Empower**. The fixed public decision is the owner's real May 28 decision after ending roughly a decade of ride-hailing.
 6. Run the live Context query. The current verified path reports `retrievalMode = context`, 18 current Context candidates, and 4 retained structured matches.
-7. Read **Personal History Basis**: past choice, reason, actual outcome, later evaluation when recorded, and source event ID.
-8. Expand a match to inspect field-level similarities, differences, weights, and provenance.
-9. **Cognition Timeline** remains descriptive; it does not generate a growth score.
+7. Read **Empower Analysis V1** first: cognition empowerment, capability empowerment, current decision gaps, option-breadth change, and the five evidence-linked decision-improvement actions.\n8. Read **Personal History Basis**: past choice, reason, actual outcome, later evaluation when recorded, and source event ID.\n9. Expand a match to inspect field-level similarities, differences, weights, and provenance.\n10. **Cognition Timeline** remains descriptive; it does not generate a growth score.
 
 Current verification: **56 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, GitHub CI passes, and the public Vercel deployment passes.**
 
