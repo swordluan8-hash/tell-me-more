@@ -12,6 +12,7 @@ a final decision, personality verdict, or growth score.
 This repository is the submission codebase for **Path One: Ship an Agent That
 Queries Real Content**.
 
+- **Live public review:** https://tell-me-more-web.vercel.app/
 - **Sanity project ID:** `3tdecpiq`
 - **Knowledge Base ID:** `kbrqT3iILYmW`
 - **Retrieval:** Sanity Context MCP backed by the Knowledge Base
@@ -59,6 +60,21 @@ flowchart LR
     S --> CL
 ```
 
+### Hindsight Leakage lab
+
+The public review build includes a live modeling A/B test for the project's central failure mode: **hindsight leakage**.
+
+It keeps the same current decision and the same three Sanity Context candidates, then compares:
+
+- a deliberately naive full-history baseline that flattens decision-time facts and later outcomes into one searchable record; and
+- Tell Me More's production **Temporal Integrity** path, which reads the sealed Content Lake records and ranks only on decision-time fields.
+
+With the current synthetic corpus, the baseline moves the 2018 collaboration to rank #1 because its later outcome contains “delivery delay” / “extra coordination” concepts. The production structured path ranks the 2021 trial-first event #1 instead.
+
+The UI exposes the later-only leaked terms and the exact later-outcome sentence. The two columns use different comparison models, so their absolute scores are not compared across columns; the visible result is the **within-column rank flip** under the same query and Context candidate set.
+
+This lab is read-only and non-persistent.
+
 ### Demo screenshots
 
 Synthetic demo only; no personal-history content is included in these images.
@@ -85,7 +101,7 @@ npx playwright install chromium
 npm run test:e2e               # starts an isolated local-demo server and never writes production
 ```
 
-Only localhost requests are accepted. This is not an authenticated public service.
+Local development accepts localhost requests. The internet-facing review build is enabled only with `TMM_PUBLIC_DEMO=true` and is intentionally read-only: synthetic archive reads plus fixed, non-persistent Context experiments. It is not a general authenticated multi-user service.
 The UI is Chinese; labels distinguish synthetic demo content and personal history.
 
 ## Demo walkthrough
@@ -109,7 +125,7 @@ The initial seed has 12 synthetic documents: 3 artifacts, 3 memories, 3 historic
 events, 2 cognition planes, and 1 baseline. Empower sessions are created on use.
 Demo questionnaire runs may append additional demonstration T0 snapshots.
 
-Current verification: 54 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, and the production dataset remains at exactly 12 canonical documents / 3 historical events after E2E. Browser tests use an isolated gitignored local archive.
+Current verification: 56 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, and the production dataset remains at exactly 12 canonical documents / 3 historical events after E2E. Browser tests use an isolated gitignored local archive.
 
 ## Sanity and Context
 
@@ -169,7 +185,8 @@ Set `TMM_PUBLIC_DEMO=true` for an internet-facing review build. This mode is int
 - Content Lake write credentials are ignored even if accidentally configured;
 - artifact, T0, seal, recall and gap-write actions are rejected;
 - the public Empower button runs one fixed synthetic decision through the live Sanity Context / Knowledge Base path;
-- the returned `empowermentSession` is not persisted;
+- the public Hindsight Leakage lab compares a naive flattened-history baseline with the production Temporal Integrity matcher using the same Context candidate set;
+- neither the returned `empowermentSession` nor the Hindsight experiment result is persisted;
 - the public deployment reads the public dataset anonymously while the organization Context token remains server-side.
 
 This keeps the review experience live without turning the contest dataset into a public write API.
