@@ -495,7 +495,7 @@ export default function Demo() {
                 <div>
                   <p className="eyebrow">
                     {publicDemo
-                      ? "REAL ARTIFACTS → INTERVIEW → SEALED HISTORY → EMPOWER"
+                      ? "REAL OBJECT → REAL MEMORY → REAL DECISION → DATA → ANALYSIS → EMPOWER"
                       : "YOUR HISTORY, YOUR REFERENCE"}
                   </p>
                   <h1>
@@ -516,9 +516,9 @@ export default function Demo() {
                   <p className="lead">
                     {publicDemo ? (
                       <>
-                        Start from real artifacts or confirmed life anchors. The Agent records the user&apos;s own words, asks only for missing decision fields, seals the event, and accumulates a traceable personal decision history.
+                        Tell Me More triggers authentic memories through real objects, uses a proactive AI Agent to reconstruct real decision-making processes through interviews, accumulates authentic personal data over time, and uses algorithms to analyze and empower.
                         <br />
-                        当新的选择出现，按下“赋能”，从自己的历史中调出相似事件、当时选择、结果、后来评价和来源，作为第二参照。
+                        三个真实：真实物件、真实回忆、真实当时决策。
                       </>
                     ) : (
                       <>

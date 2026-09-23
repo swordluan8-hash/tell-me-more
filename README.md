@@ -4,7 +4,15 @@
 
 A single-user prototype governed by [PRODUCT_SPEC_V2.md](PRODUCT_SPEC_V2.md).
 
-Tell Me More starts from **real artifacts and historical events**, uses interviews to reconstruct the user's cognition, information, environment and decisions at that time, lets the user review them from today's perspective, and accumulates this material into a traceable personal-history archive. When the user later faces an important choice, the Agent retrieves the same or similar personal history and presents personal-experience evidence for that choice.
+**Tell Me More (叙能) is an intelligent system that triggers authentic memories through real objects, uses a proactive AI Agent to reconstruct real decision-making processes through interviews, accumulates authentic personal data over time, and uses algorithms to analyze and empower.**
+
+Three non-negotiable “real” layers:
+
+- **real objects / 真实物件**
+- **real memories / 真实回忆**
+- **real decisions at that time / 真实当时决策**
+
+Core chain: **object → memory → decision → data → analysis → empowerment**.
 
 The Agent records, organizes, compares and presents. **The final choice always remains with the user.**
 
