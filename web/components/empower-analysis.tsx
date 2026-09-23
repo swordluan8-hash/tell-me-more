@@ -8,6 +8,11 @@ export default function EmpowerAnalysisView({
 }) {
   const changed = analysis.cognitionAndCapability.dimensions.filter((d) => d.status === "changed");
   const stable = analysis.cognitionAndCapability.dimensions.filter((d) => d.status === "stable");
+  const baseline = analysis.cognitionAndCapability.baselineComparison;
+  const baselineChanged = baseline?.dimensions.filter((d) => d.status === "changed") || [];
+  const baselineStable = baseline?.dimensions.filter((d) => d.status === "stable") || [];
+  const baselineCurrentOnly =
+    baseline?.dimensions.filter((d) => d.status === "current_recorded_only") || [];
   const capability = analysis.cognitionAndCapability.capabilitySnapshot;
   const resourceItems = [...capability.resourceEvidence, ...capability.constraintEvidence].slice(0, 8);
   return (
@@ -86,9 +91,23 @@ export default function EmpowerAnalysisView({
 
         <article className="analysis-card">
           <span>03 / 认知平面对比</span>
-          <h3>{analysis.cognitionAndCapability.comparedHistoricalPlaneCount} 个历史认知平面 ↔ 当前基线</h3>
-          <p>已确认变化：{changed.length} 项 · 保持原文相同：{stable.length} 项</p>
-          <small>{analysis.cognitionAndCapability.rule}</small>
+          {baseline ? (
+            <>
+              <h3>T0 · {baseline.baselinePlane.periodStart} ↔ 当前 · {baseline.currentPlane.periodStart}</h3>
+              <p>
+                双方都有记录且内容改变：{baselineChanged.length} 项 ·
+                原文相同：{baselineStable.length} 项 ·
+                T0 未记录而当前已记录：{baselineCurrentOnly.length} 项
+              </p>
+              <small>{baseline.rule}</small>
+            </>
+          ) : (
+            <>
+              <h3>{analysis.cognitionAndCapability.comparedHistoricalPlaneCount} 个历史认知平面 ↔ 当前基线</h3>
+              <p>已确认变化：{changed.length} 项 · 保持原文相同：{stable.length} 项</p>
+              <small>{analysis.cognitionAndCapability.rule}</small>
+            </>
+          )}
         </article>
       </div>
 
@@ -188,21 +207,28 @@ export default function EmpowerAnalysisView({
       </div>
 
       <details className="cognition-delta-details">
-        <summary>展开 20 个认知/能力维度的历史 ↔ 当前证据</summary>
-        {analysis.cognitionAndCapability.dimensions.map((d) => (
+        <summary>{baseline ? "展开 T0 ↔ 当前 20 个认知/能力维度" : "展开 20 个认知/能力维度的历史 ↔ 当前证据"}</summary>
+        {(baseline ? baseline.dimensions : analysis.cognitionAndCapability.dimensions).map((d) => (
           <div className="plane-diff" key={d.key}>
             <h3>
               {d.label} · {" "}
-              {d.status === "changed" ? "已确认变化" : d.status === "stable" ? "保持相同" : d.status === "current_recorded_only" ? "当前有记录 / 历史缺记录" : d.status === "historical_recorded_only" ? "历史有记录 / 当前缺记录" : "证据不足"}
+              {d.status === "changed" ? "已确认变化" : d.status === "stable" ? "保持相同" : d.status === "current_recorded_only" ? "当前有记录 / T0缺记录" : d.status === "historical_recorded_only" ? "T0有记录 / 当前缺记录" : "证据不足"}
             </h3>
             {d.current && (
               <div>
-                <span>当前 / T0</span>
+                <span>{baseline ? "当前 · " + baseline.currentPlane.periodStart : "当前认知平面"}</span>
                 <p>{d.current.text}</p>
                 <small>{d.current.sourceRefs.join(" · ")}</small>
               </div>
             )}
-            {d.historical.map((h) => (
+            {"baseline" in d && d.baseline && (
+              <div>
+                <span>T0 · {baseline?.baselinePlane.periodStart}</span>
+                <p>{d.baseline.text}</p>
+                <small>{d.baseline.sourceRefs.join(" · ")}</small>
+              </div>
+            )}
+            {"historical" in d && d.historical.map((h) => (
               <div key={h.planeRef}>
                 <span>{h.periodStart || "时间待补"} · {h.title}</span>
                 <p>{h.text}</p>

@@ -5,7 +5,7 @@ import type {
   Features,
   HistoricalEvent,
 } from "./model";
-import type { ScenarioContext } from "./temporal";
+import { dateBounds, type ScenarioContext } from "./temporal";
 import { rank } from "./similarity";
 
 type Match = ReturnType<typeof rank>[number];
@@ -88,7 +88,51 @@ function eventOptionCount(event: HistoricalEvent) {
   return texts.length ? Math.max(...texts.map(visibleOptionCount)) : 0;
 }
 
-function currentContextEvidence(documents: ArchiveDocument[]) {
+function currentContextEvidence(
+  documents: ArchiveDocument[],
+  currentPlane?: Extract<ArchiveDocument, { _type: "cognitionPlane" }>,
+) {
+  if (currentPlane && currentPlane.anchorType === "future_observed") {
+    const categories = {
+      information: [] as { quote: string; sourceRef: string; field: string }[],
+      capability: [] as { quote: string; sourceRef: string; field: string }[],
+      resource: [] as { quote: string; sourceRef: string; field: string }[],
+      constraint: [] as { quote: string; sourceRef: string; field: string }[],
+      options: [] as { quote: string; sourceRef: string; field: string }[],
+      uncertainty: [] as { quote: string; sourceRef: string; field: string }[],
+    };
+    const add = (
+      category: keyof typeof categories,
+      key: (typeof planeFields)[number],
+    ) => {
+      const answer = currentPlane.fields[key];
+      if (answer.state !== "known") return;
+      categories[category].push({
+        quote: answer.text,
+        sourceRef: currentPlane._id,
+        field: `fields.${key}`,
+      });
+    };
+    add("information", "informationSources");
+    add("information", "cognitionRadius");
+    add("information", "uncertaintyHandling");
+    add("capability", "technologyAccess");
+    add("capability", "executionCapacity");
+    add("capability", "learningModel");
+    add("capability", "actionStyle");
+    add("resource", "resourceCapacity");
+    add("resource", "moneyModel");
+    add("resource", "timeHorizon");
+    add("constraint", "physicalOrMemoryConstraints");
+    add("constraint", "riskModel");
+    add("constraint", "relationshipModel");
+    add("options", "visibleOptionBreadth");
+    add("options", "opportunityModel");
+    add("uncertainty", "uncertaintyHandling");
+    add("uncertainty", "failureModel");
+    return categories;
+  }
+
   const statements = documents.filter(
     (
       d,
@@ -243,9 +287,25 @@ export function buildEmpowermentAnalysis(input: {
 
   const planes = effectivePlanes(documents, scenario);
   const t0Planes = planes.filter((p) => p.anchorType === "T0");
-  const currentPlane =
+  const baselinePlane =
     (scenario && t0Planes.find((p) => p._id === scenario.t0PlaneId)) ||
     (t0Planes.length === 1 ? t0Planes[0] : undefined);
+  const currentCandidates = planes.filter(
+    (p) => p.anchorType === "T0" || p.anchorType === "future_observed",
+  );
+  const scenarioCutoff = scenario ? dateBounds(scenario.asOfDate) : null;
+  const eligibleCurrent = currentCandidates.filter((p) => {
+    if (!scenarioCutoff) return true;
+    const end = dateBounds(p.periodEnd);
+    return !!end && end.max <= scenarioCutoff.max;
+  });
+  const currentPlane = eligibleCurrent
+    .sort((a, b) => {
+      const ad = dateBounds(a.periodEnd)?.max || "";
+      const bd = dateBounds(b.periodEnd)?.max || "";
+      return ad.localeCompare(bd) || a._id.localeCompare(b._id);
+    })
+    .at(-1) || baselinePlane;
 
   const matchedPlanes = matchedEvents
     .flatMap((event) =>
@@ -257,6 +317,43 @@ export function buildEmpowermentAnalysis(input: {
       (plane, index, all) =>
         all.findIndex((p) => p._id === plane._id) === index,
     );
+
+  const baselineDimensions =
+    currentPlane && baselinePlane && currentPlane._id !== baselinePlane._id
+      ? planeFields.map((key) => {
+          const currentAnswer = currentPlane.fields[key];
+          const baselineAnswer = baselinePlane.fields[key];
+          const currentKnown = currentAnswer.state === "known";
+          const baselineKnown = baselineAnswer.state === "known";
+          const status =
+            currentKnown && baselineKnown
+              ? normalized(currentAnswer.text) === normalized(baselineAnswer.text)
+                ? ("stable" as const)
+                : ("changed" as const)
+              : currentKnown
+                ? ("current_recorded_only" as const)
+                : baselineKnown
+                  ? ("historical_recorded_only" as const)
+                  : ("insufficient" as const);
+          return {
+            key,
+            label: planeLabels[key],
+            status,
+            current: currentKnown
+              ? {
+                  text: currentAnswer.text,
+                  sourceRefs: currentAnswer.provenance.map((p) => p.sourceRef._ref),
+                }
+              : null,
+            baseline: baselineKnown
+              ? {
+                  text: baselineAnswer.text,
+                  sourceRefs: baselineAnswer.provenance.map((p) => p.sourceRef._ref),
+                }
+              : null,
+          };
+        })
+      : [];
 
   const cognitionDimensions = currentPlane
     ? planeFields.map((key) => {
@@ -330,7 +427,7 @@ export function buildEmpowermentAnalysis(input: {
         }
       : null;
 
-  const contextEvidence = currentContextEvidence(documents);
+  const contextEvidence = currentContextEvidence(documents, currentPlane);
 
   const currentDecisionCompleteness = {
     recorded: dimensions
@@ -479,7 +576,7 @@ export function buildEmpowermentAnalysis(input: {
     })),
     conclusion:
       currentActionStyle || currentUncertaintyHandling
-        ? "当前 T0 已明确记录新的决策规则；与相似历史的后来复盘相比，可以确认判断方法发生了变化。但这不是整体能力高低评分。"
+        ? "当前认知平面已明确记录决策规则；与相似历史的后来复盘相比，可以确认判断方法发生了变化。但这不是整体能力高低评分。"
         : "当前决策方法记录不足，不能判断变化。",
   };
 
@@ -514,6 +611,24 @@ export function buildEmpowermentAnalysis(input: {
             periodStart: currentPlane.periodStart,
           }
         : null,
+      baselineComparison:
+        baselinePlane && currentPlane && baselinePlane._id !== currentPlane._id
+          ? {
+              baselinePlane: {
+                planeRef: baselinePlane._id,
+                title: baselinePlane.title,
+                periodStart: baselinePlane.periodStart,
+              },
+              currentPlane: {
+                planeRef: currentPlane._id,
+                title: currentPlane.title,
+                periodStart: currentPlane.periodStart,
+              },
+              dimensions: baselineDimensions,
+              rule:
+                "这里只比较 T0 与当前已记录字段；T0 未记录的维度只标记为当前新增记录，不据此判断成长。",
+            }
+          : null,
       comparedHistoricalPlaneCount: matchedPlanes.length,
       dimensions: cognitionDimensions,
       optionBreadth,

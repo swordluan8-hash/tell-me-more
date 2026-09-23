@@ -1317,7 +1317,7 @@ export default function Demo() {
                       </button>
                     )}
                     {publicDemo && (
-                      <span className="source">{publicRealHistory ? "真实 5 月 28 日问题 · 结果不持久化" : "固定虚构问题 · 结果不持久化"}</span>
+                      <span className="source">{publicRealHistory ? "真实 9 月 24 日 T+1 问题 · 5 月 28 日保留为 T0 · 结果不持久化" : "固定虚构问题 · 结果不持久化"}</span>
                     )}
                   </div>
                 </form>

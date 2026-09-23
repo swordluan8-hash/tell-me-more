@@ -75,47 +75,47 @@ flowchart LR
 
 ### Real-history public proof
 
-The challenge build now uses the owner's **real personal history**, publicly disclosed with explicit authorization for judging.
+The challenge build uses the owner's **real personal history**, publicly disclosed with explicit authorization for judging.
 
-Verified public corpus:
+Verified public corpus after the confirmed T+1 seal:
 
-- **121 real personal-history documents**
+- **124 real personal-history documents**
 - **23 structured historical events**
-- **54 verbatim memory statements**
-- **15 artifacts / life anchors**
+- **55 verbatim memory statements**
+- **16 artifacts / life anchors**
+- **25 cognition planes**
 - **1 real T0 baseline**
+- **1 confirmed T+1 current cognition plane**
 - **0 synthetic event records remaining in the public dataset**
 
-The Archive page includes a **Full Verbatim Corpus** for all 54 saved memory statements, including records that have not yet been linked to a structured event.
+The Archive page includes a **Full Verbatim Corpus** for all 55 saved memory statements, including the confirmed Sep 24 T+1 interview and records that have not yet been linked to a structured event.
 
-The fixed public Empower question comes from the owner's real May 28 session. The live result is currently:
+The fixed public Empower question now reflects the owner's confirmed **2026-09-24 T+1 current state**. The May 28 session remains the immutable T0 baseline. The current verified Context path reports:
 
-- `retrievalMode = context`
-- 18 historical candidates returned by the current real Knowledge Base / Context retrieval
-- 4 structured matches retained for the current decision
+- retrievalMode = context
+- 18 historical candidates returned by the real Knowledge Base / Context retrieval
+- 3 structured matches retained for the current T+1 decision
 
 ### Empower Analysis V1
 
-Context recall is **not** the final Empower output. After recall and structured reranking, `Empower Analysis V1` converts the matched personal history into current decision support.
+Context recall is **not** the final Empower output. After recall and structured reranking, Empower Analysis V1 converts the matched personal history into current decision support.
 
 Current real-session output:
 
-- **7 / 8 current decision dimensions recorded**; the missing dimension is role / responsibility position;
-- **4 current visible paths vs a maximum of 2 explicitly recorded in the matched historical events** — evidence of wider visible-option breadth, not a global “growth score”;
-- **4 matched historical cognition planes compared with T0**;
-- **5 decision-improvement actions** generated from the owner’s own history and current evidence;
+- **8 / 8 current decision dimensions recorded**;
+- **5 current visible paths vs a maximum of 1 explicitly recorded in the currently matched historical events** — evidence of wider visible-option breadth, not a global growth score;
+- **3 matched historical cognition planes** for the current T+1 decision;
+- formal **T0 (2026-05-28) ↔ T+1 (2026-09-24)** comparison: **7 dimensions have records on both sides and all 7 changed; 13 dimensions were unrecorded at T0 but are now recorded**;
+- **2 decision-improvement actions** remain after the T+1 interview filled the earlier role and execution gaps;
 - separate **cognition empowerment** and **capability empowerment** sections;
-- every action links back to a historical event or verbatim current evidence.
+- every action links back to a historical event or current recorded evidence.
 
-The five current decision-improvement actions are:
+The two current decision-improvement actions are:
 
-1. complete the current role / responsibility position;
-2. replace early-feeling judgments with explicit validation conditions;
-3. stage investment instead of making one large commitment before validation;
-4. do not treat the familiar old path as automatically safe;
-5. turn the chosen direction into an executable first step with explicit tool gaps.
+1. replace early-feeling judgments with explicit validation conditions;
+2. stage investment instead of making one large commitment before validation.
 
-These are **process improvements**, not a final A/B choice. The user still decides.
+The 7 / 13 comparison is a record difference, **not a growth score**. These actions are process improvements, not a final A/B choice. The user still decides.
 
 Implementation spec: [`EMPOWER_ANALYSIS_V1.md`](EMPOWER_ANALYSIS_V1.md)
 
@@ -149,15 +149,18 @@ The local product UI is Chinese. Judge mode uses English-first bilingual guidanc
 
 1. Open the live review build and confirm **REAL PERSONAL HISTORY · OWNER AUTHORIZED PUBLIC DISCLOSURE**.
 2. Open **Archive** and inspect the real sealed historical events.
-3. Scroll to **Full Verbatim Corpus** and open any of the 54 saved `memoryStatement` records to see the exact recorded words.
+3. Scroll to **Full Verbatim Corpus** and open any of the 55 saved memoryStatement records to see the exact recorded words.
 4. Compare the verbatim layer with the structured event/classification layer; the system does not present classifications as if they were original quotes.
-5. Open **Empower**. The fixed public decision is the owner's real May 28 decision after ending roughly a decade of ride-hailing.
-6. Run the live Context query. The current verified path reports `retrievalMode = context`, 18 current Context candidates, and 4 retained structured matches.
-7. Read **Empower Analysis V1** first: cognition empowerment, capability empowerment, current decision gaps, option-breadth change, and the five evidence-linked decision-improvement actions.\n8. Read **Personal History Basis**: past choice, reason, actual outcome, later evaluation when recorded, and source event ID.\n9. Expand a match to inspect field-level similarities, differences, weights, and provenance.\n10. **Cognition Timeline** remains descriptive; it does not generate a growth score.
+5. Open **Empower**. The fixed public decision is the owner's confirmed Sep 24 T+1 state; May 28 remains the T0 baseline for direct comparison.
+6. Run the live Context query. The current verified path reports retrievalMode = context, 18 current Context candidates, and 3 retained structured matches.
+7. Read **Empower Analysis V1** first: cognition empowerment, capability empowerment, T0 ↔ T+1 comparison, option-breadth change, and the two evidence-linked decision-improvement actions.
+8. Read **Personal History Basis**: past choice, reason, actual outcome, later evaluation when recorded, and source event ID.
+9. Expand a match to inspect field-level similarities, differences, weights, and provenance.
+10. **Cognition Timeline** remains descriptive; it does not generate a growth score.
 
-Current verification: **56 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, GitHub CI passes, and the public Vercel deployment passes.**
+Current local verification: **58 deterministic/unit rule tests pass, 4 browser E2E flows pass, and typecheck/lint/build pass**. Public deployment is verified separately after the T+1 code update is deployed.
 
-The public Content Lake now contains the owner-authorized real archive: **121 documents / 23 historical events / 54 verbatim memory statements / 15 artifacts or anchors / 1 T0 baseline**.
+The public Content Lake now contains the owner-authorized real archive: **124 documents / 23 historical events / 55 verbatim memory statements / 16 artifacts or anchors / 25 cognition planes / 1 T0 baseline**.
 
 ## Sanity and Context
 
@@ -197,7 +200,7 @@ maps it back to sealed Content Lake records and performs its own deterministic
 pre-decision similarity reranking. KB prose is not used as a final recommendation.
 MCP failures still produce an explicit Content Lake fallback.
 
-The public Content Lake now contains **121 owner-authorized real personal-history documents**. The Knowledge Base dataset import selects `demo == false` historical events and ingested **23 / 23 real sealed events with 0 ingestion failures**.
+The public Content Lake now contains **124 owner-authorized real personal-history documents**. The Knowledge Base dataset import selects `demo == false` historical events and ingested **23 / 23 real sealed events with 0 ingestion failures**.
 
 The Knowledge Base build completed successfully. It currently reports **2 review issues**, so this README does not claim that every historical record is semantically complete. **Path One Knowledge Base-backed Context retrieval is verified by the live public Empower path (`retrievalMode = context`).**
 
@@ -211,11 +214,11 @@ References verified on 2026-09-22:
 
 The internet-facing review build is intentionally **read-only**, but the data is real rather than synthetic. The owner explicitly authorized public disclosure for this challenge.
 
-- all 121 current public archive documents are `demo == false` real personal-history records;
+- all 124 current public archive documents are `demo == false` real personal-history records;
 - the three old synthetic partnership events have been removed;
-- all 54 saved verbatim memory statements are inspectable in the UI;
+- all 55 saved verbatim memory statements are inspectable in the UI;
 - public artifact/T0/seal/recall/gap-write actions are rejected;
-- the public Empower button runs the real May 28 current decision through Sanity Context / Knowledge Base;
+- the public Empower button runs the confirmed Sep 24 T+1 current decision through Sanity Context / Knowledge Base while retaining May 28 as T0;
 - the returned Empower session is not persisted;
 - the Context organization token remains server-side.
 
