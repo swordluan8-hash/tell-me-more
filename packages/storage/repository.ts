@@ -107,7 +107,7 @@ export function repository(personal = false): ArchiveRepository {
   const c = serverConfig();
   return c.storage === "local-demo" ||
     !c.projectId ||
-    (personal && !c.privateDataset)
+    (personal && !c.privateDataset && !c.publicRealHistory)
     ? local
     : new SanityRepository();
 }
@@ -115,7 +115,7 @@ export function storageMode(personal = false) {
   const c = serverConfig();
   return c.storage === "local-demo" ||
     !c.projectId ||
-    (personal && !c.privateDataset)
+    (personal && !c.privateDataset && !c.publicRealHistory)
     ? ("local-demo" as const)
     : ("sanity-groq" as const);
 }

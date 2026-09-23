@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getArchive, perform } from "../../../../packages/application/service";
 import { ZodError } from "zod";
 import { serverConfig } from "../../../../packages/storage/config";
-import { exampleDecision, hindsightExperimentDecision } from "../../../../packages/domain/catalog";
+import { exampleDecision, hindsightExperimentDecision, publicRealDecision } from "../../../../packages/domain/catalog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 function local(req: NextRequest) {
@@ -11,16 +11,16 @@ function local(req: NextRequest) {
   return host === "localhost" || host === "127.0.0.1";
 }
 export async function GET(req: NextRequest) {
-  const publicDemo = serverConfig().publicDemo;
+  const { publicDemo, publicRealHistory } = serverConfig();
   const wantsPersonal = req.nextUrl.searchParams.get("personal") === "true";
-  if ((!local(req) && !publicDemo) || (publicDemo && wantsPersonal))
+  if ((!local(req) && !publicDemo) || (publicDemo && wantsPersonal && !publicRealHistory))
     return NextResponse.json(
       { error: publicDemo ? "PUBLIC_DEMO_ONLY" : "LOCAL_ONLY" },
       { status: 403 },
     );
   try {
     return NextResponse.json(
-      await getArchive(publicDemo ? false : wantsPersonal),
+      await getArchive(publicDemo ? publicRealHistory : wantsPersonal),
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 }
 export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin");
-  const publicDemo = serverConfig().publicDemo;
+  const { publicDemo, publicRealHistory } = serverConfig();
   if (
     (!local(req) && !publicDemo) ||
     (origin && new URL(origin).host !== req.headers.get("host"))
@@ -56,6 +56,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PAYLOAD_TOO_LARGE" }, { status: 413 });
     const { action, payload } = JSON.parse(raw);
     if (publicDemo) {
+      if (publicRealHistory) {
+        if (action !== "empower-preview")
+          return NextResponse.json(
+            { error: "PUBLIC_REAL_HISTORY_READ_ONLY" },
+            { status: 403 },
+          );
+        const result = await perform("empower-preview", {
+          current: publicRealDecision,
+          demo: false,
+        });
+        return NextResponse.json(result, {
+          status: 200,
+          headers: {
+            "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+          },
+        });
+      }
       if (action !== "empower-preview" && action !== "hindsight-preview")
         return NextResponse.json(
           { error: "PUBLIC_DEMO_READ_ONLY" },

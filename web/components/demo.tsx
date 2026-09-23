@@ -10,6 +10,7 @@ import {
   dimensions,
   exampleDecision,
   hindsightExperimentDecision,
+  publicRealDecision,
   interviewFields,
   questions,
   unknownLabels,
@@ -148,6 +149,7 @@ export default function Demo() {
     [mode, setMode] = useState("读取中"),
     [personal, setPersonal] = useState(false),
     [publicDemo, setPublicDemo] = useState(false),
+    [publicRealHistory, setPublicRealHistory] = useState(false),
     [archiveInitialized, setArchiveInitialized] = useState(false),
     [busy, setBusy] = useState(false),
     [hindsightBusy, setHindsightBusy] = useState(false),
@@ -201,9 +203,10 @@ export default function Demo() {
     setMode(data.mode);
     setScenario(data.scenario || null);
     setPublicDemo(Boolean(data.publicDemo));
+    setPublicRealHistory(Boolean(data.publicRealHistory));
     if (data.publicDemo) {
       setPersonal(false);
-      setCurrent(exampleDecision);
+      setCurrent(data.publicRealHistory ? publicRealDecision : exampleDecision);
     }
   }
   useEffect(() => {
@@ -227,6 +230,7 @@ export default function Demo() {
           setMode(personalData.mode);
           setScenario(personalData.scenario || null);
           setPublicDemo(false);
+          setPublicRealHistory(false);
         } else {
           await refresh(false);
         }
@@ -502,7 +506,9 @@ export default function Demo() {
                   : mode}
             <span>
               {publicDemo
-                ? "SYNTHETIC DATA ONLY · WRITE + PERSONAL ARCHIVE DISABLED"
+                ? publicRealHistory
+                  ? "REAL PERSONAL HISTORY · OWNER AUTHORIZED PUBLIC DISCLOSURE · READ ONLY"
+                  : "SYNTHETIC DATA ONLY · WRITE + PERSONAL ARCHIVE DISABLED"
                 : personal
                   ? "个人数据与演示数据隔离"
                   : "全部示例均为虚构，非你的真实经历"}
@@ -510,7 +516,7 @@ export default function Demo() {
           </div>
           {publicDemo && (
             <div className="alert" data-testid="public-demo-banner">
-              <b>JUDGE MODE · READ ONLY.</b> This public build demonstrates the product loop with synthetic history: evidence → recall/interview → sealed decision history → long-term archive → Empower. Sanity Context / Knowledge Base powers historical recall. The Hindsight Leakage lab is only a secondary integrity test. Nothing in this public session is written back to Content Lake.
+              {publicRealHistory ? (<> <b>JUDGE MODE · REAL PERSONAL HISTORY · READ ONLY.</b> The owner explicitly authorized public disclosure of this personal archive for the challenge. The records below are his actual narrated history, stored with verbatim recall and provenance. Sanity Context / Knowledge Base retrieves from these real historical records. Nothing in this public session writes back to Content Lake. </>) : (<> <b>JUDGE MODE · READ ONLY.</b> This public build demonstrates the product loop with synthetic history: evidence → recall/interview → sealed decision history → long-term archive → Empower. Sanity Context / Knowledge Base powers historical recall. Nothing in this public session is written back to Content Lake. </>)}
             </div>
           )}
           {scenario && personal && (
@@ -575,7 +581,9 @@ export default function Demo() {
                       onClick={() => navigate(publicDemo ? "archive" : "baseline")}
                     >
                       {publicDemo
-                        ? "VIEW SYNTHETIC ARCHIVE / 查看虚构档案"
+                        ? publicRealHistory
+                        ? "VIEW REAL PERSONAL ARCHIVE / 查看真实个人档案"
+                        : "VIEW SYNTHETIC ARCHIVE / 查看虚构档案"
                         : "建立我的 T0 起点"}{" "}
                       <span>↗</span>
                     </button>
@@ -596,19 +604,19 @@ export default function Demo() {
                     我<small>此刻</small>
                   </div>
                   <span className="orbit-node n1">
-                    2018
+                    {publicRealHistory ? "2015" : "2018"}
                     <br />
-                    <b>一次合作</b>
+                    <b>{publicRealHistory ? "开始网约车" : "一次合作"}</b>
                   </span>
                   <span className="orbit-node n2">
-                    2021
+                    {publicRealHistory ? "2017" : "2021"}
                     <br />
-                    <b>一次试点</b>
+                    <b>{publicRealHistory ? "日本料理店" : "一次试点"}</b>
                   </span>
                   <span className="orbit-node n3">
-                    T0
+                    {publicRealHistory ? "T0 · 2026" : "T0"}
                     <br />
-                    <b>现在的我</b>
+                    <b>{publicRealHistory ? "结束网约车" : "现在的我"}</b>
                   </span>
                   <span className="orbit-caption">
                     每一次选择，都有当时的理由。
@@ -660,7 +668,7 @@ export default function Demo() {
                 )}
               </section>
               <div className="section-heading">
-                <h2>{personal ? "已保存的个人历史" : "已封存的演示片段"}</h2>
+                <h2>{personal || publicRealHistory ? "已保存的真实个人历史" : "已封存的演示片段"}</h2>
                 <button
                   className="text-button"
                   onClick={() => navigate("archive")}
@@ -1457,7 +1465,7 @@ export default function Demo() {
                   <div className="closing-note">{session.conclusion}</div>
                 </section>
               )}
-              {publicDemo && (
+              {publicDemo && !publicRealHistory && (
                 <section className="panel hindsight-lab" data-testid="hindsight-lab">
                   <div className="section-heading">
                     <div>

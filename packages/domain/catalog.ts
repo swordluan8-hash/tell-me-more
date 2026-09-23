@@ -104,6 +104,16 @@ export const exampleDecision = {
   options: "先做小范围试点；直接加入；暂缓合作。",
   stuck: "目标：收入与责任边界都很重要；信息：目前信息不足。",
 };
+export const publicRealDecision = {
+  happened:
+    "今天我把已经开了大约十年的网约车，已经正式结束了。所以我今天也面临着一个重大选择",
+  urgency:
+    "这行业还在，但你连糊口都不够了，这就不是我要的行业。",
+  options:
+    "但是我是不是要捡回抖音呢？\n回老家呢，是我一个最不可能的决定。\n所以我也不可能到社会去找工作。\n那以我目前来检测，我只对YouTube熟悉，因为我毕竟看了好四年了。",
+  stuck:
+    "信息：我只对YouTube熟悉，因为我毕竟看了好四年了。\n目标：只能自己找谋生。\n技术：我现在又不了解AI。\n关系：我呢，也有家里的朋友让我回去。\n当前未知：我不知道今天这个网约车选择是对还是错",
+};
 export const hindsightExperimentDecision = {
   happened: "一个新的合作项目出现，需要明确工作职责。",
   urgency: "对方希望本周答复，时间有限，也担心交付延期和额外协调。",

@@ -2,7 +2,7 @@
   _type == "historicalEvent" &&
   userId == "single-user" &&
   status == "sealed" &&
-  demo == true
+  demo == false
 ]{
   _id,
   _type,

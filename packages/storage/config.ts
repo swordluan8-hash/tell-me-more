@@ -18,6 +18,8 @@ export function serverConfig() {
     }
   const get = (k: string) => process.env[k] || local[k] || "";
   const publicDemo = get("TMM_PUBLIC_DEMO") === "true";
+  const publicRealHistory =
+    publicDemo && get("TMM_PUBLIC_REAL_HISTORY") !== "false";
   return {
     projectId: get("SANITY_PROJECT_ID"),
     dataset: get("SANITY_DATASET") || "production",
@@ -28,5 +30,6 @@ export function serverConfig() {
     storage: process.env.TMM_STORAGE || "sanity",
     privateDataset: get("TMM_PRIVATE_DATASET") === "true",
     publicDemo,
+    publicRealHistory,
   };
 }

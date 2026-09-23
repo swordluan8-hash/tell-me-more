@@ -49,6 +49,7 @@ export async function getArchive(personal = false) {
     mode: storageMode(personal),
     scenario: readScenario(personal),
     publicDemo: serverConfig().publicDemo,
+    publicRealHistory: serverConfig().publicRealHistory,
   };
 }
 
@@ -237,7 +238,7 @@ export async function perform(action: string, payload: unknown) {
   if (action === "hindsight-preview") return hindsightExperiment(payload);
   if (action === "empower-preview") {
     const v = z
-      .object({ current: currentDecision, demo: z.literal(true) })
+      .object({ current: currentDecision, demo: z.boolean() })
       .parse(payload);
     return empower(v, false);
   }
