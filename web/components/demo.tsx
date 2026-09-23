@@ -194,6 +194,15 @@ export default function Demo() {
   const events = documents.filter(
     (d): d is HistoricalEvent => d._type === "historicalEvent",
   );
+  const allMemories = documents.filter(
+    (
+      d,
+    ): d is Extract<ArchiveDocument, { _type: "memoryStatement" }> =>
+      d._type === "memoryStatement",
+  );
+  const allArtifacts = documents.filter(
+    (d): d is Artifact => d._type === "artifact",
+  );
   const gaps = missingFields(fields);
   async function refresh(p = personal) {
     const r = await fetch(`/api/archive?personal=${p}`);
@@ -1200,6 +1209,36 @@ export default function Demo() {
                   </div>
                 )}
               </div>
+              {publicRealHistory && (
+                <section className="public-corpus" data-testid="public-real-corpus">
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">FULL VERBATIM CORPUS / 完整原话库</p>
+                      <h2>{allMemories.length} 条原话 · {allArtifacts.length} 个资料/锚点</h2>
+                    </div>
+                    <span className="pill">OWNER AUTHORIZED PUBLIC DISCLOSURE</span>
+                  </div>
+                  <p className="lead">
+                    这里不只展示已经归入事件的内容。所有保存的 memoryStatement 都直接公开，包括尚未关联到具体事件的原话；不做隐私删减，不把系统整理冒充用户原话。
+                  </p>
+                  <div className="corpus-list">
+                    {allMemories.map((m, i) => (
+                      <details key={m._id}>
+                        <summary>
+                          {String(i + 1).padStart(2, "0")} · {m._id}
+                          {m.eventRefs.length
+                            ? " · 关联事件 " + m.eventRefs.map((r) => r._ref).join(" / ")
+                            : " · 尚未关联事件"}
+                        </summary>
+                        <pre>{m.verbatim}</pre>
+                        <small className="source">
+                          实际采集：{localTimestamp(m.recordedAt, scenario?.timeZone)}
+                        </small>
+                      </details>
+                    ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
           {page === "empower" && (
@@ -1273,7 +1312,7 @@ export default function Demo() {
                       </button>
                     )}
                     {publicDemo && (
-                      <span className="source">固定虚构问题 · 结果不持久化</span>
+                      <span className="source">{publicRealHistory ? "真实 5 月 28 日问题 · 结果不持久化" : "固定虚构问题 · 结果不持久化"}</span>
                     )}
                   </div>
                 </form>

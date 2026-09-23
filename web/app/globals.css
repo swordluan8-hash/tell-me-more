@@ -1424,3 +1424,32 @@ th {
     text-align: left;
   }
 }
+
+/* Public real-history full corpus */
+.public-corpus {
+  margin-top: 34px;
+  padding-top: 8px;
+}
+.corpus-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.corpus-list details {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 12px 14px;
+}
+.corpus-list summary {
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+.corpus-list pre {
+  margin: 14px 0 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.75;
+}
