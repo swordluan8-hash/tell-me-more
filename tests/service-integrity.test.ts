@@ -91,9 +91,28 @@ describe("production boundaries under test", () => {
     })) as {
       document: Extract<ArchiveDocument, { _type: "empowermentSession" }>;
       events: HistoricalEvent[];
+      analysis: {
+        algorithmVersion: string;
+        principle: string;
+        empowermentTargets: {
+          cognition: { key: string; title: string; action: string }[];
+          capability: { key: string; title: string; action: string }[];
+        };
+        decisionInfluence: {
+          historyCards: unknown[];
+          decisionActions: { key: string; title: string; action: string }[];
+        };
+        cognitionAndCapability: {
+          dimensions: unknown[];
+        };
+      };
     };
     expect(result.document.retrievalMode).toBe("context");
     expect(result.events.length).toBeGreaterThan(0);
+    expect(result.analysis.algorithmVersion).toBe("empower-analysis-v1");
+    expect(result.analysis.decisionInfluence.historyCards.length).toBeGreaterThan(0);
+    expect(result.analysis.cognitionAndCapability.dimensions.length).toBeGreaterThan(0);
+    expect(result.analysis.principle).toContain("不输出唯一最终选择");
     expect(docs.length).toBe(before);
     expect(appendCalls).toBe(0);
   });

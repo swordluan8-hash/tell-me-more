@@ -83,6 +83,10 @@ test("full synthetic evidence → recall → seal → retrieve → timeline loop
   await expect(
     page.getByText("历史是参照，最终选择由你完成。", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByTestId("empower-analysis")).toBeVisible();
+  await expect(
+    page.getByText("不是只找历史：把过去转成当前决策检查点。", { exact: true }),
+  ).toBeVisible();
   expect(await page.locator(".match").count()).toBeGreaterThanOrEqual(3);
   await page.locator(".match summary").first().click();
   await expect(page.locator("table").first()).toBeVisible();

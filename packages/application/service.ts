@@ -16,6 +16,7 @@ import {
   sealRequest,
 } from "../domain/workflow";
 import { ALGORITHM_VERSION, currentFeatures, leakyWholeHistoryRank, rank } from "../domain/similarity";
+import { buildEmpowermentAnalysis } from "../domain/empowerment-analysis";
 import { repository, storageMode } from "../storage/repository";
 import { serverConfig } from "../storage/config";
 import { retrieve } from "../storage/context";
@@ -100,6 +101,14 @@ async function empower(payload: unknown, persist: boolean) {
   const resolved = scoped.events.map((e) => effectiveEvent(e, ownDocs, scenario));
   const readiness = auditArchive(ownDocs, scenario);
   const matches = rank(features, resolved);
+  const analysis = buildEmpowermentAnalysis({
+    current: v.current,
+    currentFeatures: features,
+    matches,
+    events: resolved,
+    documents: ownDocs,
+    scenario,
+  });
   const document = archiveDocument.parse({
     ...base(id, "empowermentSession", v.demo),
     _type: "empowermentSession",
@@ -138,6 +147,7 @@ async function empower(payload: unknown, persist: boolean) {
         scenario,
       ),
     ),
+    analysis,
   };
 }
 

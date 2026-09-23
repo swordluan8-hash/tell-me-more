@@ -2,8 +2,10 @@
 import Link from "next/link";
 import Timeline from "./timeline";
 import GapReview from "./gap-review";
+import EmpowerAnalysisView from "./empower-analysis";
 import { auditEvent, effectiveEvent, eventsAtSession, recordStatus } from "../../packages/domain/completeness";
 import { matchBasis } from "../../packages/domain/similarity";
+import type { EmpowermentAnalysis } from "../../packages/domain/empowerment-analysis";
 import { localDate, localTimestamp, recallViewDate, type ScenarioContext } from "../../packages/domain/temporal";
 import { useEffect, useState, type FormEvent } from "react";
 import {
@@ -189,6 +191,7 @@ export default function Demo() {
       stuck: "",
     }),
     [session, setSession] = useState<Session | null>(null),
+    [empowerAnalysis, setEmpowerAnalysis] = useState<EmpowermentAnalysis | null>(null),
     [resultEvents, setResultEvents] = useState<HistoricalEvent[]>([]),
     [hindsight, setHindsight] = useState<HindsightExperiment | null>(null);
   const events = documents.filter(
@@ -494,6 +497,7 @@ export default function Demo() {
               onClick={() => {
                 setPersonal(!personal);
                 setSession(null);
+                setEmpowerAnalysis(null);
                 setScenario(null);
                 setResultEvents([]);
                 setPage("welcome");
@@ -1259,6 +1263,7 @@ export default function Demo() {
                         publicDemo ? {} : { current, demo: !personal },
                       );
                       setSession(result.document);
+                      setEmpowerAnalysis(result.analysis || null);
                       setResultEvents(result.events);
                       if (!publicDemo) await refresh();
                     });
@@ -1393,6 +1398,8 @@ export default function Demo() {
                       </section>
                     );
                   })()}
+                  {empowerAnalysis && <EmpowerAnalysisView analysis={empowerAnalysis} />}
+
                   {session.completeness && <div className="alert" data-testid="empower-completeness">
                     {session.completeness.assessedNodes} 个节点已检查，{session.completeness.coreCompleteNodes} 个核心字段记录完整。
                     以下候选只能使用已记录部分；未完成访谈不等于完整决策证据。
