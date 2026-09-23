@@ -2,10 +2,11 @@
 
 [![CI](https://github.com/swordluan8-hash/tell-me-more/actions/workflows/ci.yml/badge.svg)](https://github.com/swordluan8-hash/tell-me-more/actions/workflows/ci.yml)
 
-A single-user, evidence-first decision-history demo, governed by
-[PRODUCT_SPEC_V2.md](PRODUCT_SPEC_V2.md). It records artifacts → verbatim recall →
-confirmed sealed events → explainable historical comparisons. It never generates
-a final decision, personality verdict, or growth score.
+A single-user prototype governed by [PRODUCT_SPEC_V2.md](PRODUCT_SPEC_V2.md).
+
+Tell Me More starts from **real artifacts and historical events**, uses interviews to reconstruct the user's cognition, information, environment and decisions at that time, lets the user review them from today's perspective, and accumulates this material into a traceable personal-history archive. When the user later faces an important choice, the Agent retrieves the same or similar personal history and presents personal-experience evidence for that choice.
+
+The Agent records, organizes, compares and presents. **The final choice always remains with the user.**
 
 ## Sanity Challenge 2026 · Path One
 
@@ -21,12 +22,16 @@ Queries Real Content**.
 - **Safety boundary:** historical outcomes and later evaluations never enter
   candidate matching or similarity features
 
-Tell Me More is built for decisions where a generic answer is not enough. It
-turns confirmed personal history into source-linked structured records, then uses
-Sanity Context to recall relevant historical material. The application maps those
-candidates back to the sealed Content Lake records and performs transparent
-pre-decision reranking before showing similarities, differences, and provenance.
-The user makes the final decision.
+The product must make six things work together:
+
+1. **real artifacts**;
+2. **traceable personal history**;
+3. **active gap interviews**;
+4. the user's **best decision at that time**;
+5. **structured sealing**;
+6. **similar-history Empowerment**.
+
+Empowerment is not the first answer. It is a **second reference**: the Agent retrieves the user's own history, shows past choices, reasons, outcomes, later evaluations, similarities, differences and sources, and gives the decision back to the user.
 
 ### Why structured content matters
 
@@ -61,28 +66,24 @@ flowchart LR
     S --> CL
 ```
 
-### Hindsight Leakage lab
+### Secondary integrity test: Hindsight Leakage
 
-The public review build includes a live modeling A/B test for the project's central failure mode: **hindsight leakage**.
+The public review build also includes a read-only Hindsight Leakage test. This is **not the product definition**. It is one integrity check for the larger personal-history system: later outcomes must not pretend they were known at an earlier decision point.
 
-It keeps the same current decision and the same three Sanity Context candidates, then compares:
-
-- a deliberately naive full-history baseline that flattens decision-time facts and later outcomes into one searchable record; and
-- Tell Me More's production **Temporal Integrity** path, which reads the sealed Content Lake records and ranks only on decision-time fields.
-
-With the current synthetic corpus, the baseline moves the 2018 collaboration to rank #1 because its later outcome contains “delivery delay” / “extra coordination” concepts. The production structured path ranks the 2021 trial-first event #1 instead.
-
-The UI exposes the later-only leaked terms and the exact later-outcome sentence. The two columns use different comparison models, so their absolute scores are not compared across columns; the visible result is the **within-column rank flip** under the same query and Context candidate set.
-
-This lab is read-only and non-persistent.
+The test keeps the same historical candidates and shows how a deliberately flattened full-history baseline can be distorted by later outcome text. Tell Me More keeps decision-time matching fields separate.
 
 ### Demo screenshots
 
 Synthetic demo only; no personal-history content is included in these images.
 
+![Empowerment comparison showing source-linked historical candidates](docs/screenshots/empower-desktop.png)
+
+<details>
+<summary>Secondary integrity test: Hindsight Leakage</summary>
+
 ![Hindsight Leakage modeling A/B test showing the rank flip](docs/screenshots/hindsight-leakage.png)
 
-![Empowerment comparison showing source-linked historical candidates](docs/screenshots/empower-desktop.png)
+</details>
 
 <p align="center">
   <img src="docs/screenshots/home-mobile.png" width="390" alt="Tell Me More mobile home screen" />
@@ -105,7 +106,7 @@ npm run test:e2e               # starts an isolated local-demo server and never 
 ```
 
 Local development accepts localhost requests. The internet-facing review build is enabled only with `TMM_PUBLIC_DEMO=true` and is intentionally read-only: synthetic archive reads plus fixed, non-persistent Context experiments. It is not a general authenticated multi-user service.
-The local product UI is Chinese. In `TMM_PUBLIC_DEMO=true` judge mode, the core navigation, safety banner, and Hindsight Leakage lab use English-first bilingual labels so the experiment is reviewable without reading Chinese. Labels still distinguish synthetic demo content from personal history.
+The local product UI is Chinese. In `TMM_PUBLIC_DEMO=true` judge mode, the core navigation and review guidance are English-first bilingual so judges can follow the product loop: evidence → interview → sealed history → long-term archive → Empower. Labels still distinguish synthetic demo content from personal history.
 
 ## Demo walkthrough
 
