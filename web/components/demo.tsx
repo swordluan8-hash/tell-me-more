@@ -148,6 +148,7 @@ export default function Demo() {
     [mode, setMode] = useState("读取中"),
     [personal, setPersonal] = useState(false),
     [publicDemo, setPublicDemo] = useState(false),
+    [archiveInitialized, setArchiveInitialized] = useState(false),
     [busy, setBusy] = useState(false),
     [hindsightBusy, setHindsightBusy] = useState(false),
     [error, setError] = useState(""),
@@ -206,10 +207,48 @@ export default function Demo() {
     }
   }
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const personalResponse = await fetch("/api/archive?personal=true");
+        const personalData = personalResponse.ok
+          ? await personalResponse.json()
+          : null;
+
+        if (
+          personalData &&
+          !personalData.publicDemo &&
+          Array.isArray(personalData.documents) &&
+          personalData.documents.length > 0
+        ) {
+          if (cancelled) return;
+          setPersonal(true);
+          setDocuments(personalData.documents);
+          setMode(personalData.mode);
+          setScenario(personalData.scenario || null);
+          setPublicDemo(false);
+        } else {
+          await refresh(false);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "档案读取失败");
+      } finally {
+        if (!cancelled) setArchiveInitialized(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Initial archive selection is resolved once; later mode changes use the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!archiveInitialized) return;
     refresh(personal).catch((e) =>
       setError(e.message),
     ); /* mode changes reload the selected archive */ // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personal]);
+  }, [personal, archiveInitialized]);
   async function run(work: () => Promise<void>) {
     setBusy(true);
     setError("");
