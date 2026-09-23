@@ -79,6 +79,8 @@ This lab is read-only and non-persistent.
 
 Synthetic demo only; no personal-history content is included in these images.
 
+![Hindsight Leakage modeling A/B test showing the rank flip](docs/screenshots/hindsight-leakage.png)
+
 ![Empowerment comparison showing source-linked historical candidates](docs/screenshots/empower-desktop.png)
 
 <p align="center">
