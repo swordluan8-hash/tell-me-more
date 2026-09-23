@@ -13,6 +13,7 @@ This repository is the submission codebase for **Path One: Ship an Agent That
 Queries Real Content**.
 
 - **Live public review:** https://tell-me-more-web.vercel.app/
+- **DEV submission:** https://dev.to/sword_luan_6dfb4e81cf5f15/tell-me-more-an-agent-that-queries-your-past-without-letting-hindsight-rewrite-it-2f0n
 - **Sanity project ID:** `3tdecpiq`
 - **Knowledge Base ID:** `kbrqT3iILYmW`
 - **Retrieval:** Sanity Context MCP backed by the Knowledge Base
