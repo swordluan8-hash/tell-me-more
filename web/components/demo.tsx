@@ -68,6 +68,17 @@ const navigation: [Page, string, string][] = [
   ["timeline", "认知轨迹", "05"],
   ["gaps", "补缺访谈", "06"],
 ];
+const publicNavigationLabels: Partial<Record<Page, string>> = {
+  welcome: "HOME / 起点",
+  archive: "ARCHIVE / 历史档案",
+  empower: "EMPOWER / 赋能",
+  timeline: "TIMELINE / 认知轨迹",
+};
+const experimentTitles: Record<string, string> = {
+  "demo-event-1": "Joined before responsibilities were clear / 职责未明时加入合作",
+  "demo-event-2": "Used a trial to define boundaries / 用试点确认合作边界",
+  "demo-event-3": "Deferred when time was insufficient / 时间不足时暂缓项目",
+};
 async function api(action: string, payload: unknown) {
   const r = await fetch("/api/archive", {
     method: "POST",
@@ -399,7 +410,7 @@ export default function Demo() {
               onClick={() => navigate(id)}
             >
               <span>{n}</span>
-              {label}
+              {publicDemo ? publicNavigationLabels[id] || label : label}
               <i>↗</i>
             </button>
           ))}
@@ -414,8 +425,14 @@ export default function Demo() {
       <div className="main">
         <header>
           <span>
-            个人历史 /{" "}
-            <b>{navigation.find(([id]) => id === page)?.[1] || "记录"}</b>
+            {publicDemo ? "PUBLIC REVIEW / " : "个人历史 / "}
+            <b>
+              {publicDemo
+                ? publicNavigationLabels[page] ||
+                  navigation.find(([id]) => id === page)?.[1] ||
+                  "RECORD"
+                : navigation.find(([id]) => id === page)?.[1] || "记录"}
+            </b>
           </span>
           {publicDemo ? (
             <span className="mode">PUBLIC DEMO · 只读评审版</span>
@@ -446,7 +463,7 @@ export default function Demo() {
                   : mode}
             <span>
               {publicDemo
-                ? "仅使用虚构演示资料；公网写入和个人档案已关闭"
+                ? "SYNTHETIC DATA ONLY · WRITE + PERSONAL ARCHIVE DISABLED"
                 : personal
                   ? "个人数据与演示数据隔离"
                   : "全部示例均为虚构，非你的真实经历"}
@@ -454,7 +471,7 @@ export default function Demo() {
           </div>
           {publicDemo && (
             <div className="alert" data-testid="public-demo-banner">
-              这是比赛公开评审版。可查看封存历史、认知轨迹，并运行固定的实时 Sanity Context / Knowledge Base 赋能演示；本次结果不写回 Content Lake。
+              <b>JUDGE MODE · READ ONLY.</b> Synthetic history only. Review the sealed archive and timeline, then run the live Sanity Context / Knowledge Base Empower demo and Hindsight Leakage test. Nothing in this public session is written back to Content Lake.
             </div>
           )}
           {scenario && personal && (
@@ -494,13 +511,16 @@ export default function Demo() {
                       className="primary"
                       onClick={() => navigate(publicDemo ? "archive" : "baseline")}
                     >
-                      {publicDemo ? "查看虚构历史档案" : "建立我的 T0 起点"} <span>↗</span>
+                      {publicDemo
+                        ? "VIEW SYNTHETIC ARCHIVE / 查看虚构档案"
+                        : "建立我的 T0 起点"}{" "}
+                      <span>↗</span>
                     </button>
                     <button
                       className="text-button"
                       onClick={() => navigate("empower")}
                     >
-                      体验历史赋能 →
+                      {publicDemo ? "EMPOWER / 体验历史赋能 →" : "体验历史赋能 →"}
                     </button>
                   </div>
                   <small>10 个问题 · 没有标准答案 · 不作人格判断</small>
@@ -1181,20 +1201,29 @@ export default function Demo() {
                   <div className="section-heading">
                     <div>
                       <p className="eyebrow">HINDSIGHT LEAKAGE · MODELING A/B TEST</p>
-                      <h2>同一当前问题、同一批 Context 候选，两种历史建模会得到什么？</h2>
+                      <h2>Same question. Same Context candidates. Two ways to model history.</h2>
+                      <p className="muted">同一当前问题、同一批 Context 候选，两种历史建模会得到什么？</p>
                     </div>
                     <span className="pill">READ ONLY · LIVE CONTEXT</span>
                   </div>
                   <p className="lead">
-                    当前决策里有一个合理担忧：“交付延期和额外协调”。2018 年那次合作后来真的发生了这些事，
-                    但在 2018 年做决定时，这些结果还不存在。左边模拟一个常见的 memory-RAG baseline：
-                    把当时事实与后来结果压成一段全文；右边运行叙能实际使用的 Temporal Integrity 结构化匹配。
+                    The current decision reasonably worries about <b>delivery delay and extra coordination</b>.
+                    Those things really happened after the 2018 decision — but they did not exist as evidence when that decision was made.
+                    The left side simulates a flattened memory-RAG baseline; the right side runs Tell Me More&apos;s production Temporal Integrity matcher.
+                  </p>
+                  <p className="muted">
+                    当前担忧是“交付延期和额外协调”。2018 后来确实发生了这些事，但它们不属于 2018 当时可知信息。
                   </p>
                   <div className="experiment-query">
-                    <b>固定当前决策</b>
-                    <p>{hindsightExperimentDecision.happened}</p>
-                    <p>{hindsightExperimentDecision.urgency}</p>
-                    <small>{hindsightExperimentDecision.stuck}</small>
+                    <b>FIXED CURRENT DECISION / 固定当前决策</b>
+                    <p>A new collaboration needs clearer responsibilities.</p>
+                    <p>Reply due this week; worried about delivery delay and extra coordination.</p>
+                    <small>
+                      Project lead working with a partner · income and responsibility boundaries both matter · information is still incomplete.
+                    </small>
+                    <small className="source">
+                      Original Chinese query: {hindsightExperimentDecision.happened} {hindsightExperimentDecision.urgency}
+                    </small>
                   </div>
                   <button
                     type="button"
@@ -1204,20 +1233,20 @@ export default function Demo() {
                   >
                     {hindsightBusy
                       ? "正在运行对照实验…"
-                      : "运行 Hindsight Leakage 对照实验 ↗"}
+                      : "RUN HINDSIGHT LEAKAGE TEST / 运行对照实验 ↗"}
                   </button>
 
                   {hindsight && (
                     <div className="hindsight-results" aria-live="polite">
                       <div className="alert">
-                        候选来源：{hindsight.retrievalMode} · 同一批 {hindsight.candidateCount} 个历史事件 · 不写回 Content Lake
+                        LIVE RETRIEVAL: {hindsight.retrievalMode} · SAME {hindsight.candidateCount} CANDIDATES · NO CONTENT LAKE WRITE
                       </div>
                       <div className="comparison-grid">
                         <article className="experiment-column leaky-column">
                           <span className="eyebrow">A · NAIVE FULL-HISTORY MATCH</span>
-                          <h3>Baseline：把整段历史压成一块可搜索文本</h3>
+                          <h3>Baseline: flatten the whole history into searchable text</h3>
                           <p>
-                            当时信息与后来结果被混在同一文本空间。今天的担忧因此可能命中“未来才发生”的词。
+                            Decision-time facts and later outcomes share one text space, so a current concern can match words that only existed in the future.
                           </p>
                           <ExperimentRanking
                             rows={hindsight.naiveFullHistory}
@@ -1227,9 +1256,9 @@ export default function Demo() {
                         </article>
                         <article className="experiment-column safe-column">
                           <span className="eyebrow">B · TEMPORAL INTEGRITY</span>
-                          <h3>Production：只比较当时可知条件</h3>
+                          <h3>Production: compare only what was knowable then</h3>
                           <p>
-                            Context 先召回候选；Content Lake 回读封存原档；结构化排名只使用 decision-time fields。
+                            Context recalls candidates; Content Lake returns the sealed records; structured ranking uses decision-time fields only.
                           </p>
                           <ExperimentRanking
                             rows={hindsight.temporalIntegrity}
@@ -1238,28 +1267,32 @@ export default function Demo() {
                         </article>
                       </div>
                       <p className="source score-note">
-                        两列分数来自不同的比较模型，绝对数值不能跨列比较；本实验比较的是在同一当前问题与同一批候选下，各模型的列内排名，以及 later-only 信息是否改变了第一参照。
+                        Scores use different comparison models and are not comparable across columns. Compare the within-column ranking: same current question, same Context candidates, different historical modeling boundary.
                       </p>
                       <div className="flip-note" data-testid="hindsight-rank-flip">
                         <b>{hindsight.rankingFlipped ? "RANK FLIPPED" : "NO RANK FLIP"}</b>
-                        <span>{hindsight.conclusion}</span>
+                        <span>
+                          Flattened history elevates 2018 because it can see later outcomes. Temporal Integrity keeps 2021 first using decision-time fields.
+                        </span>
                       </div>
                       {hindsight.naiveFullHistory[0]?.laterEvidence?.length ? (
                         <div className="leak-proof">
-                          <span>2018 后来结果 · 不应进入当时匹配</span>
+                          <span>2018 LATER OUTCOME · MUST NOT ENTER THE 2018 DECISION-TIME MATCH</span>
                           <blockquote>
-                            {hindsight.naiveFullHistory[0].laterEvidence[0]}
+                            “Two months later, delivery was delayed and I took on extra coordination work.”
                           </blockquote>
+                          <small className="source">
+                            Sealed source text: {hindsight.naiveFullHistory[0].laterEvidence[0]}
+                          </small>
                           <p>
-                            真正只从后来结果泄漏进来的共同词：
-                            <b>
-                              {" "}
-                              {hindsight.naiveFullHistory[0].leakedMatched?.join(" / ")}
-                            </b>
+                            Later-only matched terms:
+                            <b>{" "}{hindsight.naiveFullHistory[0].leakedMatched?.join(" / ")}</b>
                           </p>
                         </div>
                       ) : null}
-                      <small className="source">{hindsight.retrievalNotice}</small>
+                      <small className="source">
+                        Sanity Context + Knowledge Base recall the candidate history; the application reads the complete sealed Content Lake records before production reranking.
+                      </small>
                     </div>
                   )}
                 </section>
@@ -1423,11 +1456,11 @@ function ExperimentRanking({
           <div className="experiment-rank-row" key={row.eventRef._ref}>
             <span className="rank-index">{index + 1}</span>
             <div>
-              <b>{event?.title || row.eventRef._ref}</b>
+              <b>{experimentTitles[row.eventRef._ref] || event?.title || row.eventRef._ref}</b>
               <small>{event?.eventStartDate || "日期未知"}</small>
               {showLeak && row.leakedMatched?.length ? (
                 <small className="leak-words">
-                  后来信息命中：{row.leakedMatched.join(" / ")}
+                  Later-only match / 后来信息命中：{row.leakedMatched.join(" / ")}
                 </small>
               ) : null}
             </div>

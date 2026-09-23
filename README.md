@@ -102,7 +102,7 @@ npm run test:e2e               # starts an isolated local-demo server and never 
 ```
 
 Local development accepts localhost requests. The internet-facing review build is enabled only with `TMM_PUBLIC_DEMO=true` and is intentionally read-only: synthetic archive reads plus fixed, non-persistent Context experiments. It is not a general authenticated multi-user service.
-The UI is Chinese; labels distinguish synthetic demo content and personal history.
+The local product UI is Chinese. In `TMM_PUBLIC_DEMO=true` judge mode, the core navigation, safety banner, and Hindsight Leakage lab use English-first bilingual labels so the experiment is reviewable without reading Chinese. Labels still distinguish synthetic demo content from personal history.
 
 ## Demo walkthrough
 
