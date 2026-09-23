@@ -74,28 +74,32 @@ flowchart LR
     S --> CL
 ```
 
-### Secondary integrity test: Hindsight Leakage
+### Real-history public proof
 
-The public review build also includes a read-only Hindsight Leakage test. This is **not the product definition**. It is one integrity check for the larger personal-history system: later outcomes must not pretend they were known at an earlier decision point.
+The challenge build now uses the owner's **real personal history**, publicly disclosed with explicit authorization for judging.
 
-The test keeps the same historical candidates and shows how a deliberately flattened full-history baseline can be distorted by later outcome text. Tell Me More keeps decision-time matching fields separate.
+Verified public corpus:
 
-### Demo screenshots
+- **121 real personal-history documents**
+- **23 structured historical events**
+- **54 verbatim memory statements**
+- **15 artifacts / life anchors**
+- **1 real T0 baseline**
+- **0 synthetic event records remaining in the public dataset**
 
-Synthetic demo only; no personal-history content is included in these images.
+The Archive page includes a **Full Verbatim Corpus** for all 54 saved memory statements, including records that have not yet been linked to a structured event.
 
-![Empowerment comparison showing source-linked historical candidates](docs/screenshots/empower-desktop.png)
+The fixed public Empower question comes from the owner's real May 28 session. The live result is currently:
 
-<details>
-<summary>Secondary integrity test: Hindsight Leakage</summary>
+- `retrievalMode = context`
+- 23 historical candidates available through the real Knowledge Base
+- 4 structured matches retained for the current decision
 
-![Hindsight Leakage modeling A/B test showing the rank flip](docs/screenshots/hindsight-leakage.png)
+![Real-history home](docs/screenshots/real-history-home.png)
 
-</details>
+![Real personal-history archive and full verbatim corpus](docs/screenshots/real-history-archive.png)
 
-<p align="center">
-  <img src="docs/screenshots/home-mobile.png" width="390" alt="Tell Me More mobile home screen" />
-</p>
+![Real personal-history Empower result](docs/screenshots/real-history-empower.png)
 
 ## Run
 
@@ -113,31 +117,24 @@ npx playwright install chromium
 npm run test:e2e               # starts an isolated local-demo server and never writes production
 ```
 
-Local development accepts localhost requests. The internet-facing review build is enabled only with `TMM_PUBLIC_DEMO=true` and is intentionally read-only: synthetic archive reads plus fixed, non-persistent Context experiments. It is not a general authenticated multi-user service.
-The local product UI is Chinese. In `TMM_PUBLIC_DEMO=true` judge mode, the core navigation and review guidance are English-first bilingual so judges can follow the product loop: evidence → interview → sealed history → long-term archive → Empower. Labels still distinguish synthetic demo content from personal history.
+Local development accepts localhost requests. The internet-facing review build is read-only but now exposes the owner's real personal-history corpus with explicit authorization. It is not a general authenticated multi-user service.
+The local product UI is Chinese. Judge mode uses English-first bilingual guidance for the product loop: real object → real memory → real decision → data → analysis → Empower.
 
 ## Demo walkthrough
 
-1. Open the welcome page. Complete ten T0 questions and explicitly seal the baseline.
-2. **02 历史入口**: choose “我有旧物 / 旧记录” or “我没有旧物”. For an object, enter text or select an image for metadata + SHA-256; without an object, seal a later-recall anchor first.
-   In demo mode, explicitly attest that the artifact is synthetic before cloud upload.
-3. Confirm the verbatim artifact readback. Narrate freely; then assign original
-   sentences to the eight fields. Only the next missing field is requested.
-   Unknown / forgotten / cannot judge / not applicable are complete answers.
-4. Record the actual choice and the user's historical best decision. Review and
-   confirm the archive. Its evidence, recall, and classification layers remain separate.
-5. **赋能 → 填入演示问题 → 调用相似历史** returns multiple source events. Expand
-   the components to see shared words, differences, weights, and provenance. Open
-   a source event to inspect its original evidence and later recall.
-6. **认知轨迹** compares reconstructed historical planes and T0 using sourced original
-   statements. Differences are descriptive; neither time point is scored as better.
-7. **06 补缺访谈** audits each decision node, asks only for missing fields, accepts explicit unknown states, and appends confirmed exact-quote supplements without rewriting sealed history.
+1. Open the live review build and confirm **REAL PERSONAL HISTORY · OWNER AUTHORIZED PUBLIC DISCLOSURE**.
+2. Open **Archive** and inspect the real sealed historical events.
+3. Scroll to **Full Verbatim Corpus** and open any of the 54 saved `memoryStatement` records to see the exact recorded words.
+4. Compare the verbatim layer with the structured event/classification layer; the system does not present classifications as if they were original quotes.
+5. Open **Empower**. The fixed public decision is the owner's real May 28 decision after ending roughly a decade of ride-hailing.
+6. Run the live Context query. The current verified path reports `retrievalMode = context`, 23 available historical candidates, and 4 retained structured matches.
+7. Read **Personal History Basis**: past choice, reason, actual outcome, later evaluation when recorded, and source event ID.
+8. Expand a match to inspect field-level similarities, differences, weights, and provenance.
+9. **Cognition Timeline** remains descriptive; it does not generate a growth score.
 
-The initial seed has 12 synthetic documents: 3 artifacts, 3 memories, 3 historical
-events, 2 cognition planes, and 1 baseline. Empower sessions are created on use.
-Demo questionnaire runs may append additional demonstration T0 snapshots.
+Current verification: **56 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, GitHub CI passes, and the public Vercel deployment passes.**
 
-Current verification: 56 deterministic/unit rule tests pass, 4 browser E2E flows pass, typecheck/lint/build pass, and the production dataset remains at exactly 12 canonical documents / 3 historical events after E2E. Browser tests use an isolated gitignored local archive.
+The public Content Lake now contains the owner-authorized real archive: **121 documents / 23 historical events / 54 verbatim memory statements / 15 artifacts or anchors / 1 T0 baseline**.
 
 ## Sanity and Context
 
@@ -177,10 +174,9 @@ maps it back to sealed Content Lake records and performs its own deterministic
 pre-decision similarity reranking. KB prose is not used as a final recommendation.
 MCP failures still produce an explicit Content Lake fallback.
 
-For submission freeze the Content Lake contains exactly the 12 canonical seed
-documents and 3 sealed historical events. The clean Knowledge Base was rebuilt from
-those 3 events and produced 5 entries with 0 issues. **Path One Knowledge Base-backed
-Context acceptance is satisfied by live MCP retrieval.**
+The public Content Lake now contains **121 owner-authorized real personal-history documents**. The Knowledge Base dataset import selects `demo == false` historical events and ingested **23 / 23 real sealed events with 0 ingestion failures**.
+
+The Knowledge Base build completed successfully. It currently reports **2 review issues**, so this README does not claim that every historical record is semantically complete. **Path One Knowledge Base-backed Context retrieval is verified by the live public Empower path (`retrievalMode = context`).**
 
 References verified on 2026-09-22:
 [AI coding-agent quickstart](https://www.sanity.io/docs/getting-started/ai-coding-agents),
@@ -190,18 +186,17 @@ References verified on 2026-09-22:
 
 ## Public judge deployment mode
 
-Set `TMM_PUBLIC_DEMO=true` for an internet-facing review build. This mode is intentionally narrower than the local product:
+The internet-facing review build is intentionally **read-only**, but the data is real rather than synthetic. The owner explicitly authorized public disclosure for this challenge.
 
-- only the 12 synthetic canonical documents are readable;
-- personal-history mode is unavailable;
-- Content Lake write credentials are ignored even if accidentally configured;
-- artifact, T0, seal, recall and gap-write actions are rejected;
-- the public Empower button runs one fixed synthetic decision through the live Sanity Context / Knowledge Base path;
-- the public Hindsight Leakage lab compares a naive flattened-history baseline with the production Temporal Integrity matcher using the same Context candidate set;
-- neither the returned `empowermentSession` nor the Hindsight experiment result is persisted;
-- the public deployment reads the public dataset anonymously while the organization Context token remains server-side.
+- all 121 current public archive documents are `demo == false` real personal-history records;
+- the three old synthetic partnership events have been removed;
+- all 54 saved verbatim memory statements are inspectable in the UI;
+- public artifact/T0/seal/recall/gap-write actions are rejected;
+- the public Empower button runs the real May 28 current decision through Sanity Context / Knowledge Base;
+- the returned Empower session is not persisted;
+- the Context organization token remains server-side.
 
-This keeps the review experience live without turning the contest dataset into a public write API.
+One imported lending/investment event contains **22 provenance references** to two child-record IDs that the earlier import workflow never created. Those references are retained as weak Sanity references; no missing record was fabricated.
 
 ## Local fallback and privacy
 
@@ -210,11 +205,7 @@ TMM_STORAGE=local-demo npm run dev
 ```
 
 The local create-only archive is `.data/archive.json` (gitignored, mode 0600).
-Personal mode always uses local storage while the cloud dataset is public. It
-never mixes personal and synthetic events in retrieval. Do not set
-`TMM_PRIVATE_DATASET=true` until the actual Sanity dataset is private. Local data
-is not encrypted at rest. A separate audited user deletion/export workflow and
-multi-user authentication are outside this slice.
+The local owner archive remains available in `.data/archive.json`. For this challenge, the same authorized real corpus is also published to the Sanity `production` dataset. Public mode remains read-only. Local data is not encrypted at rest. A separate audited user deletion/export workflow and multi-user authentication are outside this slice.
 
 ## Similarity and archive guarantees
 
