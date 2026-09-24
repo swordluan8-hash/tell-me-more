@@ -20,6 +20,14 @@ function plane(
   p.periodStart = date;
   p.periodEnd = date;
   p.sourceEventRefs = [];
+  p.confirmation =
+    anchorType === "future_observed"
+      ? {
+          confirmedAt: date + "T00:00:00.000Z",
+          verbatim: "确认T+1",
+          sourceRef: { _type: "reference", _ref: "confirmation-memory" },
+        }
+      : undefined;
   p.fields.actionStyle = {
     ...p.fields.actionStyle,
     state: "known",
@@ -82,4 +90,38 @@ describe("T+1 current cognition plane", () => {
     expect(analysis.cognitionAndCapability.currentPlane?.planeRef).toBe("t0");
     expect(analysis.cognitionAndCapability.baselineComparison).toBeNull();
   });
+
+  it("ignores an unconfirmed future-observed plane", () => {
+    const t0 = plane("t0", "T0", "2026-05-28", "先收集足够信息再行动");
+    const t1 = plane("t1-unconfirmed", "future_observed", "2026-09-24", "边做边学");
+    t1.confirmation = undefined;
+    const features = currentFeatures(current, "q");
+    const analysis = buildEmpowermentAnalysis({
+      current,
+      currentFeatures: features,
+      matches: [],
+      events: [],
+      documents: [t0, t1],
+      scenario: null,
+    });
+    expect(analysis.cognitionAndCapability.currentPlane?.planeRef).toBe("t0");
+  });
+
+  it("uses the confirmed revision and hides the superseded plane", () => {
+    const t0 = plane("t0", "T0", "2026-05-28", "先收集足够信息再行动");
+    const old = plane("t1-old", "future_observed", "2026-09-24", "旧版本");
+    const revised = plane("t1-confirmed-v2", "future_observed", "2026-09-24", "确认后的版本");
+    revised.supersedesPlaneRef = { _type: "reference", _ref: old._id };
+    const features = currentFeatures(current, "q");
+    const analysis = buildEmpowermentAnalysis({
+      current,
+      currentFeatures: features,
+      matches: [],
+      events: [],
+      documents: [t0, old, revised],
+      scenario: null,
+    });
+    expect(analysis.cognitionAndCapability.currentPlane?.planeRef).toBe("t1-confirmed-v2");
+  });
+
 });

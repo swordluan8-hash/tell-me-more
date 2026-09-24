@@ -153,6 +153,14 @@ export const cognitionPlane = z.object({
   periodStart: z.string(),
   periodEnd: z.string(),
   anchorType: z.enum(["T0", "reconstructed_past", "future_observed"]),
+  confirmation: z
+    .object({
+      confirmedAt: z.string().datetime(),
+      verbatim: z.string().trim().min(1),
+      sourceRef: reference,
+    })
+    .optional(),
+  supersedesPlaneRef: reference.optional(),
   sourceEventRefs: z.array(reference),
   sourceProvenance: z.array(provenance).min(1),
   fields: keyedAnswers(planeFields),

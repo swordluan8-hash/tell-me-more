@@ -210,6 +210,20 @@ export const schemaTypes = [
     str('periodStart', 'date'),
     str('periodEnd', 'date'),
     str('anchorType'),
+    defineField({
+      name: 'confirmation',
+      type: 'object',
+      fields: [
+        str('confirmedAt', 'datetime'),
+        str('verbatim', 'text'),
+        defineField({name: 'sourceRef', type: 'reference', to: [{type: 'memoryStatement'}]}),
+      ],
+    }),
+    defineField({
+      name: 'supersedesPlaneRef',
+      type: 'reference',
+      to: [{type: 'cognitionPlane'}],
+    }),
     refs('sourceEventRefs', ['historicalEvent']),
     list('sourceProvenance', 'sourceProvenance'),
     defineField({name: 'fields', type: 'object', fields: planeFields.map(fact)}),

@@ -117,7 +117,20 @@ export function eventsAtSession(docs: ArchiveDocument[], session: Extract<Archiv
   return effectiveEvents(docs.filter((d) => d._type !== "memoryStatement" || !d.supplements?.length || ids.has(d._id)), scenario);
 }
 export function effectivePlanes(docs: ArchiveDocument[], scenario: ScenarioContext | null = null): Plane[] {
-  return docs.filter((d): d is Plane => d._type === "cognitionPlane").map((stored) => {
+  const storedPlanes = docs.filter((d): d is Plane => d._type === "cognitionPlane");
+  const superseded = new Set(
+    storedPlanes
+      .map((p) => p.supersedesPlaneRef?._ref)
+      .filter((id): id is string => Boolean(id)),
+  );
+  return storedPlanes
+    .filter((p) => !superseded.has(p._id))
+    .filter(
+      (p) =>
+        p.anchorType !== "future_observed" ||
+        Boolean(p.confirmation?.verbatim.trim()),
+    )
+    .map((stored) => {
     const plane = structuredClone(stored);
     if (plane.anchorType === "T0") return plane; // never reinterpret registration answers
     const linked = docs.filter((d): d is HistoricalEvent => d._type === "historicalEvent" && d.demo === plane.demo && plane.sourceEventRefs.some((r) => r._ref === d._id));

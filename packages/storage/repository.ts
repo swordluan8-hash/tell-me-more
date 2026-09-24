@@ -16,6 +16,46 @@ export function rejectMutation(): never {
 function validateBatch(docs: ArchiveDocument[]) {
   return docs.map((d) => archiveDocument.parse(d));
 }
+function futurePlaneConfirmationRefs(docs: ArchiveDocument[]) {
+  return docs
+    .filter(
+      (d): d is Extract<ArchiveDocument, { _type: "cognitionPlane" }> =>
+        d._type === "cognitionPlane" && d.anchorType === "future_observed",
+    )
+    .map((d) => {
+      if (!d.confirmation)
+        throw new Error(
+          "FUTURE_PLANE_CONFIRMATION_REQUIRED: T+N cannot be sealed before explicit user confirmation.",
+        );
+      return {
+        planeId: d._id,
+        confirmation: d.confirmation,
+      };
+    });
+}
+function assertConfirmationEvidence(
+  docs: ArchiveDocument[],
+  existing: ArchiveDocument[] = [],
+) {
+  const available = [...existing, ...docs];
+  for (const { planeId, confirmation } of futurePlaneConfirmationRefs(docs)) {
+    const source = available.find(
+      (d) =>
+        d._id === confirmation.sourceRef._ref &&
+        d._type === "memoryStatement",
+    );
+    if (
+      !source ||
+      source._type !== "memoryStatement" ||
+      !source.verbatim.includes(confirmation.verbatim)
+    )
+      throw new Error(
+        "FUTURE_PLANE_CONFIRMATION_EVIDENCE_REQUIRED: " +
+          planeId +
+          " must reference a stored user confirmation statement.",
+      );
+  }
+}
 function keys(value: unknown): unknown {
   if (Array.isArray(value))
     return value.map((v, i) =>
@@ -50,6 +90,7 @@ export class LocalRepository implements ArchiveRepository {
     const valid = validateBatch(documents);
     const work = this.queue.then(async () => {
       const prior = await this.all();
+      assertConfirmationEvidence(valid, prior);
       if (
         valid.some((d) => prior.some((p) => p._id === d._id)) ||
         new Set(valid.map((d) => d._id)).size !== valid.length
@@ -90,6 +131,18 @@ export class SanityRepository implements ArchiveRepository {
   async append(documents: ArchiveDocument[]) {
     const c = serverConfig();
     const docs = validateBatch(documents);
+    const confirmationRefs = futurePlaneConfirmationRefs(docs)
+      .map(({ confirmation }) => confirmation.sourceRef._ref)
+      .filter((id) => !docs.some((d) => d._id === id));
+    const existingEvidence = confirmationRefs.length
+      ? validateBatch(
+          await sanityClient(false).fetch(
+            '*[_id in $ids && userId == "single-user" && status == "sealed" && !(_id in path("drafts.**"))]',
+            { ids: confirmationRefs },
+          ),
+        )
+      : [];
+    assertConfirmationEvidence(docs, existingEvidence);
     if (!c.privateDataset && docs.some((d) => !d.demo))
       throw new Error(
         "PUBLIC_DEMO_DATASET: personal history is local-only until a private dataset is configured.",
