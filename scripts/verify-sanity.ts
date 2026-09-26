@@ -3,12 +3,22 @@ import { SanityRepository } from "../packages/storage/repository";
 import { retrieve } from "../packages/storage/context";
 import { currentFeatures } from "../packages/domain/similarity";
 import { exampleDecision } from "../packages/domain/catalog";
+
+// Verify the same read-only real-history mode used by the public challenge build.
+// Without these flags, personal=true intentionally resolves to the local private
+// archive and never exercises Sanity Context / Knowledge Base.
+process.env.TMM_PUBLIC_DEMO = "true";
+process.env.TMM_PUBLIC_REAL_HISTORY = "true";
+
 const c = serverConfig();
 try {
   const docs = await new SanityRepository().all();
   const retrieval = await retrieve(
     currentFeatures(exampleDecision, "verification"),
+    true,
   );
+  if (retrieval.mode !== "context")
+    throw new Error("CONTEXT_VERIFICATION_FAILED");
   console.log(
     JSON.stringify(
       {

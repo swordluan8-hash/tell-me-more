@@ -79,16 +79,16 @@ The challenge build uses the owner's **real personal history**, publicly disclos
 
 Verified public corpus after the confirmed T+1 seal:
 
-- **124 real personal-history documents**
+- **126 real personal-history documents**
 - **23 structured historical events**
-- **55 verbatim memory statements**
+- **56 verbatim memory statements**
 - **16 artifacts / life anchors**
-- **25 cognition planes**
+- **26 cognition planes**
 - **1 real T0 baseline**
 - **1 confirmed T+1 current cognition plane**
 - **0 synthetic event records remaining in the public dataset**
 
-The Archive page includes a **Full Verbatim Corpus** for all 55 saved memory statements, including the confirmed Sep 24 T+1 interview and records that have not yet been linked to a structured event.
+The Archive page includes a **Full Verbatim Corpus** for all 56 saved memory statements, including the confirmed Sep 24 T+1 interview and records that have not yet been linked to a structured event.
 
 The fixed public Empower question now reflects the owner's confirmed **2026-09-24 T+1 current state**. The May 28 session remains the immutable T0 baseline. The current verified Context path reports:
 
@@ -149,7 +149,7 @@ The local product UI is Chinese. Judge mode uses English-first bilingual guidanc
 
 1. Open the live review build and confirm **REAL PERSONAL HISTORY · OWNER AUTHORIZED PUBLIC DISCLOSURE**.
 2. Open **Archive** and inspect the real sealed historical events.
-3. Scroll to **Full Verbatim Corpus** and open any of the 55 saved memoryStatement records to see the exact recorded words.
+3. Scroll to **Full Verbatim Corpus** and open any of the 56 saved memoryStatement records to see the exact recorded words.
 4. Compare the verbatim layer with the structured event/classification layer; the system does not present classifications as if they were original quotes.
 5. Open **Empower**. The fixed public decision is the owner's confirmed Sep 24 T+1 state; May 28 remains the T0 baseline for direct comparison.
 6. Run the live Context query. The current verified path reports retrievalMode = context, 18 current Context candidates, and 3 retained structured matches.
@@ -158,9 +158,9 @@ The local product UI is Chinese. Judge mode uses English-first bilingual guidanc
 9. Expand a match to inspect field-level similarities, differences, weights, and provenance.
 10. **Cognition Timeline** remains descriptive; it does not generate a growth score.
 
-Current local verification: **58 deterministic/unit rule tests pass, 4 browser E2E flows pass, and typecheck/lint/build pass**. Public deployment is verified separately after the T+1 code update is deployed.
+Current verification: **63 deterministic/unit rule tests pass, 4 browser E2E flows pass, and typecheck/lint/build pass**. The public deployment has also been re-verified after the T+1 update.
 
-The public Content Lake now contains the owner-authorized real archive: **124 documents / 23 historical events / 55 verbatim memory statements / 16 artifacts or anchors / 25 cognition planes / 1 T0 baseline**.
+The public Content Lake now contains the owner-authorized real archive: **126 documents / 23 historical events / 56 verbatim memory statements / 16 artifacts or anchors / 26 cognition planes / 1 T0 baseline / 4 empowerment sessions**.
 
 ## Sanity and Context
 
@@ -200,7 +200,7 @@ maps it back to sealed Content Lake records and performs its own deterministic
 pre-decision similarity reranking. KB prose is not used as a final recommendation.
 MCP failures still produce an explicit Content Lake fallback.
 
-The public Content Lake now contains **124 owner-authorized real personal-history documents**. The Knowledge Base dataset import selects `demo == false` historical events and ingested **23 / 23 real sealed events with 0 ingestion failures**.
+The public Content Lake now contains **126 owner-authorized real personal-history documents**. The Knowledge Base dataset import selects `demo == false` historical events and ingested **23 / 23 real sealed events with 0 ingestion failures**.
 
 The Knowledge Base build completed successfully. It currently reports **2 review issues**, so this README does not claim that every historical record is semantically complete. **Path One Knowledge Base-backed Context retrieval is verified by the live public Empower path (`retrievalMode = context`).**
 
@@ -214,9 +214,9 @@ References verified on 2026-09-22:
 
 The internet-facing review build is intentionally **read-only**, but the data is real rather than synthetic. The owner explicitly authorized public disclosure for this challenge.
 
-- all 124 current public archive documents are `demo == false` real personal-history records;
+- all 126 current public archive documents are `demo == false` real personal-history records;
 - the three old synthetic partnership events have been removed;
-- all 55 saved verbatim memory statements are inspectable in the UI;
+- all 56 saved verbatim memory statements are inspectable in the UI;
 - public artifact/T0/seal/recall/gap-write actions are rejected;
 - the public Empower button runs the confirmed Sep 24 T+1 current decision through Sanity Context / Knowledge Base while retaining May 28 as T0;
 - the returned Empower session is not persisted;

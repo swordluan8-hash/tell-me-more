@@ -39,7 +39,7 @@
   retrieval works. This is treated as provider-side status lag, not hidden as success.
 - Image bytes remain user-held; the demo archives metadata and a byte hash only.
 - Personal data uses local storage while the provisioned dataset is public.
-- No submission video or public deployment has been created.
+- At this 2026-09-22 verification snapshot, no public deployment had yet been created. This was later superseded by the live Vercel review build documented in the repository README.
 
 ## External handoff
 
